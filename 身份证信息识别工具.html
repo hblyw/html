@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>身份证信息识别工具（含学籍号提取）</title>
+  <!-- 引入外部资源 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <!-- Tailwind 配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3b82f6',
+            secondary: '#64748b',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            dark: '#1e293b',
+            light: '#f8fafc'
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .transition-all-300 {
+        transition: all 300ms ease-in-out;
+      }
+      .shadow-soft {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      }
+      .gradient-bg {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      }
+    }
+  </style>
+  
+  <style>
+    /* 全局样式 */
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      scroll-behavior: smooth;
+    }
+    
+    /* 动画效果 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    
+    .file-drop-area {
+      border: 2px dashed #cbd5e1;
+      transition: all 0.3s ease;
+    }
+    
+    .file-drop-area.active {
+      border-color: #3b82f6;
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+    
+    /* 表格样式 */
+    .result-table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    
+    .result-table th,
+    .result-table td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    
+    .result-table th {
+      background-color: #f8fafc;
+      font-weight: 600;
+    }
+    
+    .result-table tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .result-table tr:hover td {
+      background-color: #f1f5f9;
+    }
+    
+    /* 切换按钮样式（保留但隐藏按列名） */
+    .toggle-group {
+      display: inline-flex;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    
+    .toggle-btn {
+      padding: 0.375rem 0.75rem;
+      background-color: white;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .toggle-btn.active {
+      background-color: #3b82f6;
+      color: white;
+    }
+    
+    .toggle-btn:first-child {
+      border-right: 1px solid #cbd5e1;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- 顶部导航 -->
+  <header class="gradient-bg text-white shadow-md">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-id-card-o text-2xl" aria-hidden="true"></i>
+        <h1 class="text-xl md:text-2xl font-bold">身份证信息识别工具（含学籍号提取）</h1>
+      </div>
+      <div class="hidden md:flex items-center space-x-4">
+        <a href="#" class="hover:text-blue-100 transition-all-300 flex items-center">
+          <i class="fa fa-question-circle mr-1" aria-hidden="true"></i>
+          <span>使用帮助</span>
+        </a>
+        <a href="#" class="hover:text-blue-100 transition-all-300 flex items-center">
+          <i class="fa fa-info-circle mr-1" aria-hidden="true"></i>
+          <span>关于我们</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="container mx-auto px-4 py-8 md:py-12">
+    <!-- 介绍卡片 -->
+    <div class="bg-white rounded-xl shadow-soft p-6 mb-8 animate-fade-in">
+      <h2 class="text-[clamp(1.25rem,3vw,1.75rem)] font-bold text-dark mb-4">
+        快速提取身份证信息 & 生成学籍号（支持万行级数据）
+      </h2>
+      <p class="text-secondary mb-6">
+        上传包含身份证号码的Excel文件，系统将自动识别性别、出生日期、年龄，并按规则生成学籍号（G+身份证号码），生成新的Excel文件供您下载。
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-blue-50 p-4 rounded-lg flex items-start">
+          <div class="bg-primary/10 p-2 rounded-full mr-3">
+            <i class="fa fa-upload text-primary" aria-hidden="true"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-dark mb-1">上传Excel文件</h3>
+            <p class="text-sm text-secondary">支持.xlsx和.xls格式，最大50MB</p>
+          </div>
+        </div>
+        
+        <div class="bg-green-50 p-4 rounded-lg flex items-start">
+          <div class="bg-success/10 p-2 rounded-full mr-3">
+            <i class="fa fa-bolt text-success" aria-hidden="true"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-dark mb-1">高速识别处理</h3>
+            <p class="text-sm text-secondary">万行数据处理仅需几秒</p>
+          </div>
+        </div>
+        
+        <div class="bg-purple-50 p-4 rounded-lg flex items-start">
+          <div class="bg-purple-600/10 p-2 rounded-full mr-3">
+            <i class="fa fa-hashtag text-purple-600" aria-hidden="true"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-dark mb-1">生成学籍号</h3>
+            <p class="text-sm text-secondary">规则：G + 身份证号码</p>
+          </div>
+        </div>
+        
+        <div class="bg-indigo-50 p-4 rounded-lg flex items-start">
+          <div class="bg-indigo-600/10 p-2 rounded-full mr-3">
+            <i class="fa fa-download text-indigo-600" aria-hidden="true"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-dark mb-1">下载结果文件</h3>
+            <p class="text-sm text-secondary">保留原始数据，新增识别结果</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 上传区域 -->
+    <div id="upload-section" class="bg-white rounded-xl shadow-soft p-6 md:p-8 mb-8 animate-fade-in" style="animation-delay: 0.1s">
+      <h2 class="text-xl font-bold text-dark mb-6">上传文件</h2>
+      
+      <!-- 文件上传区域 -->
+      <div id="file-drop-area" class="file-drop-area rounded-lg p-8 text-center mb-6 cursor-pointer">
+        <input type="file" id="file-input" accept=".xlsx,.xls" class="hidden">
+        <i class="fa fa-cloud-upload text-4xl text-gray-300 mb-4" aria-hidden="true"></i>
+        <h3 class="text-lg font-medium text-dark mb-2">拖拽文件到此处或点击选择文件</h3>
+        <p class="text-sm text-secondary mb-4">支持 .xlsx 和 .xls 格式文件，大小不超过50MB</p>
+        <button id="select-file-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-all-300 shadow-md hover:shadow-lg">
+          选择文件
+        </button>
+        
+        <!-- 已选择文件显示 -->
+        <div id="selected-file" class="mt-4 hidden">
+          <div class="bg-gray-50 p-3 rounded-lg inline-flex items-center">
+            <i class="fa fa-file-excel-o text-green-600 mr-2" aria-hidden="true"></i>
+            <span id="file-name" class="mr-2 max-w-xs truncate"></span>
+            <span id="file-size" class="text-xs text-secondary mr-2"></span>
+            <button id="remove-file" class="text-gray-400 hover:text-danger transition-all-300">
+              <i class="fa fa-times" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 选项设置（移除按列名，仅保留按列位置） -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label class="block text-sm font-medium text-dark mb-2">身份证号码列（按列位置）</label>
+          <!-- 移除按列名/列位置切换按钮 -->
+          
+          <!-- 仅保留按列位置输入 -->
+          <div id="position-input-group">
+            <input type="text" id="id-column-position" placeholder="例如：A、B、C、D..." value="C" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+            <p class="text-xs text-secondary mt-1">请输入Excel中身份证号码所在的列位置（A=第1列，B=第2列，C=第3列...）</p>
+          </div>
+        </div>
+        
+        <div>
+          <label for="sheet-name" class="block text-sm font-medium text-dark mb-2">工作表名称 (可选)</label>
+          <input type="text" id="sheet-name" placeholder="留空则使用第一个工作表" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all-300">
+          <p class="text-xs text-secondary mt-1">如果Excel包含多个工作表，请指定工作表名称</p>
+        </div>
+      </div>
+      
+      <!-- 高级选项 -->
+      <div class="bg-gray-50 p-4 rounded-lg mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-medium text-dark">高级选项</h3>
+          <div class="text-xs text-secondary">优化大数据处理性能</div>
+        </div>
+        <div class="flex items-center">
+          <input type="checkbox" id="batch-process" checked class="mr-2">
+          <label for="batch-process" class="text-sm text-secondary">启用批量处理模式（推荐大数据使用）</label>
+        </div>
+      </div>
+      
+      <!-- 处理按钮 -->
+      <div class="text-center">
+        <button id="process-btn" class="bg-success hover:bg-success/90 text-white font-medium py-3 px-8 rounded-lg transition-all-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+          <i class="fa fa-cog mr-2" aria-hidden="true"></i>
+          开始识别处理 & 生成学籍号
+        </button>
+      </div>
+    </div>
+    
+    <!-- 处理进度区域 (默认隐藏) -->
+    <div id="progress-section" class="bg-white rounded-xl shadow-soft p-6 md:p-8 mb-8 hidden animate-fade-in">
+      <h2 class="text-xl font-bold text-dark mb-6">处理中</h2>
+      
+      <div class="flex flex-col items-center">
+        <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p id="progress-text" class="text-dark mb-4">正在读取文件并识别信息...</p>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+          <div id="progress-bar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between w-full text-sm text-secondary">
+          <p id="progress-percentage">0%</p>
+          <p id="process-stat">已处理: 0 / 0 条</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 结果展示区域 (默认隐藏) -->
+    <div id="result-section" class="bg-white rounded-xl shadow-soft p-6 md:p-8 mb-8 hidden animate-fade-in">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h2 class="text-xl font-bold text-dark mb-4 md:mb-0">识别结果 & 学籍号生成</h2>
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-secondary">
+            处理耗时: <span id="process-time">0</span> 秒
+          </div>
+          <button id="download-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition-all-300 shadow-md hover:shadow-lg flex items-center justify-center">
+            <i class="fa fa-download mr-2" aria-hidden="true"></i>
+            下载Excel文件
+          </button>
+        </div>
+      </div>
+      
+      <!-- 结果统计 -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <h3 class="text-sm text-secondary mb-1">总记录数</h3>
+          <p id="total-count" class="text-2xl font-bold text-dark">0</p>
+        </div>
+        
+        <div class="bg-green-50 p-4 rounded-lg">
+          <h3 class="text-sm text-secondary mb-1">识别成功</h3>
+          <p id="success-count" class="text-2xl font-bold text-success">0</p>
+        </div>
+        
+        <div class="bg-red-50 p-4 rounded-lg">
+          <h3 class="text-sm text-secondary mb-1">识别失败</h3>
+          <p id="failed-count" class="text-2xl font-bold text-danger">0</p>
+        </div>
+        
+        <div class="bg-indigo-50 p-4 rounded-lg">
+          <h3 class="text-sm text-secondary mb-1">学籍号生成</h3>
+          <p id="student-id-count" class="text-2xl font-bold text-indigo-600">0</p>
+        </div>
+      </div>
+      
+      <!-- 结果表格 -->
+      <div class="overflow-x-auto mb-6 max-h-96 overflow-y-auto">
+        <table class="result-table w-full">
+          <thead>
+            <tr id="table-header">
+              <!-- 表头将动态生成 -->
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- 表格内容将动态生成 -->
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- 空状态或错误信息 -->
+      <div id="result-empty" class="text-center py-8 hidden">
+        <i class="fa fa-file-text-o text-4xl text-gray-300 mb-4" aria-hidden="true"></i>
+        <p class="text-secondary">暂无识别结果</p>
+      </div>
+      
+      <div id="error-message" class="bg-red-50 border border-red-200 text-danger p-4 rounded-lg mb-6 hidden">
+        <i class="fa fa-exclamation-circle mr-2" aria-hidden="true"></i>
+        <span id="error-text"></span>
+      </div>
+      
+      <!-- 操作按钮 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button id="new-process-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-all-300 shadow-md hover:shadow-lg">
+          <i class="fa fa-upload mr-2" aria-hidden="true"></i>
+          上传新文件
+        </button>
+        <button id="download-again-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-6 rounded-lg transition-all-300 shadow-md hover:shadow-lg">
+          <i class="fa fa-download mr-2" aria-hidden="true"></i>
+          重新下载
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-dark text-white py-8">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center space-x-2 mb-2">
+            <i class="fa fa-id-card-o" aria-hidden="true"></i>
+            <span class="font-bold text-lg">身份证信息识别工具（含学籍号提取）</span>
+          </div>
+          <p class="text-gray-400 text-sm">快速、准确地提取身份证信息并生成学籍号，支持超大文件</p>
+        </div>
+        
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <span class="ml-1">帮助中心</span>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+            <i class="fa fa-shield" aria-hidden="true"></i>
+            <span class="ml-1">隐私政策</span>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-all-300">
+            <i class="fa fa-file-text-o" aria-hidden="true"></i>
+            <span class="ml-1">使用条款</span>
+          </a>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-800 mt-6 pt-6 text-center text-gray-500 text-sm">
+        &copy; 2025 身份证信息识别工具 - 保留所有权利
+      </div>
+    </div>
+  </footer>
+
+  <!-- Web Worker 脚本（内联） -->
+  <script id="id-process-worker" type="javascript/worker">
+    // 身份证解析核心函数（Worker内）
+    function parseIdCard(idNumber) {
+      idNumber = idNumber.replace(/\s/g, '');
+      
+      let birthYear, birthMonth, birthDay;
+      
+      if (idNumber.length === 18) {
+        birthYear = idNumber.substr(6, 4);
+        birthMonth = idNumber.substr(10, 2);
+        birthDay = idNumber.substr(12, 2);
+        
+        if (!isValidDate(birthYear, birthMonth, birthDay)) {
+          throw new Error('无效日期');
+        }
+        
+        const genderCode = parseInt(idNumber.substr(16, 1));
+        const gender = genderCode % 2 === 1 ? '男' : '女';
+        const age = calculateAge(new Date(`${birthYear}-${birthMonth}-${birthDay}`));
+        
+        return { gender, birthDate: `${birthYear}-${birthMonth}-${birthDay}`, age: age.toString() };
+      } else if (idNumber.length === 15) {
+        birthYear = `19${idNumber.substr(6, 2)}`;
+        birthMonth = idNumber.substr(8, 2);
+        birthDay = idNumber.substr(10, 2);
+        
+        if (!isValidDate(birthYear, birthMonth, birthDay)) {
+          throw new Error('无效日期');
+        }
+        
+        const genderCode = parseInt(idNumber.substr(13, 1));
+        const gender = genderCode % 2 === 1 ? '男' : '女';
+        const age = calculateAge(new Date(`${birthYear}-${birthMonth}-${birthDay}`));
+        
+        return { gender, birthDate: `${birthYear}-${birthMonth}-${birthDay}`, age: age.toString() };
+      } else {
+        throw new Error('长度错误');
+      }
+    }
+    
+    // 生成学籍号
+    function generateStudentId(idNumber) {
+      idNumber = idNumber.replace(/\s/g, '');
+      if (!idNumber) return '无身份证号码';
+      if (idNumber.length !== 15 && idNumber.length !== 18) return '生成失败';
+      return 'G' + idNumber;
+    }
+    
+    // 日期验证
+    function isValidDate(year, month, day) {
+      const date = new Date(`${year}-${month}-${day}`);
+      return (
+        date.getFullYear() === parseInt(year) &&
+        date.getMonth() + 1 === parseInt(month) &&
+        date.getDate() === parseInt(day)
+      );
+    }
+    
+    // 年龄计算
+    function calculateAge(birthDate) {
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return age;
+    }
+    
+    // 批量处理身份证
+    function batchProcessIds(rows, idColumnIndex, batchSize = 1000) {
+      const results = [];
+      const total = rows.length;
+      let studentIdSuccessCount = 0;
+      
+      // 分批处理，避免单次计算量过大
+      for (let i = 0; i < total; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const batchResults = batch.map(row => {
+          const idNumber = String(row[idColumnIndex] || '').trim();
+          let gender = '';
+          let birthDate = '';
+          let age = '';
+          let studentId = '';
+          let isSuccess = false;
+          let isStudentIdSuccess = false;
+          
+          try {
+            if (idNumber) {
+              const info = parseIdCard(idNumber);
+              gender = info.gender;
+              birthDate = info.birthDate;
+              age = info.age;
+              studentId = generateStudentId(idNumber);
+              isSuccess = true;
+              isStudentIdSuccess = true;
+              studentIdSuccessCount++;
+            } else {
+              gender = '无身份证号码';
+              birthDate = '';
+              age = '';
+              studentId = '无身份证号码';
+            }
+          } catch (e) {
+            gender = '识别失败';
+            birthDate = '识别失败';
+            age = '识别失败';
+            studentId = generateStudentId(idNumber); // 即使身份证识别失败，也尝试生成学籍号
+            isStudentIdSuccess = studentId !== '生成失败';
+            if (isStudentIdSuccess) studentIdSuccessCount++;
+          }
+          
+          return {
+            row: [...row, gender, birthDate, age, studentId],
+            success: isSuccess,
+            studentIdSuccess: isStudentIdSuccess
+          };
+        });
+        
+        results.push(...batchResults);
+        
+        // 发送进度更新（每批更新一次）
+        self.postMessage({
+          type: 'progress',
+          processed: Math.min(i + batchSize, total),
+          total: total,
+          studentIdSuccessCount: studentIdSuccessCount
+        });
+      }
+      
+      return {
+        results: results,
+        studentIdSuccessCount: studentIdSuccessCount
+      };
+    }
+    
+    // 监听主线程消息
+    self.onmessage = function(e) {
+      const { type, rows, idColumnIndex } = e.data;
+      
+      if (type === 'process') {
+        try {
+          const processResult = batchProcessIds(rows, idColumnIndex);
+          self.postMessage({
+            type: 'complete',
+            results: processResult.results,
+            studentIdSuccessCount: processResult.studentIdSuccessCount
+          });
+        } catch (error) {
+          self.postMessage({
+            type: 'error',
+            message: error.message
+          });
+        }
+      }
+    };
+  </script>
+
+  <!-- 主线程 JavaScript 逻辑 -->
+  <script>
+    // 全局变量
+    let selectedFile = null;
+    let processedData = null;
+    let originalHeaders = [];
+    let idColumnMode = 'position'; // 固定为按列位置
+    let worker = null; // Web Worker 实例
+    let processStartTime = 0; // 处理开始时间
+    let studentIdSuccessCount = 0; // 学籍号生成成功数
+    
+    // DOM 元素
+    const fileDropArea = document.getElementById('file-drop-area');
+    const fileInput = document.getElementById('file-input');
+    const selectFileBtn = document.getElementById('select-file-btn');
+    const selectedFileEl = document.getElementById('selected-file');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('file-size');
+    const removeFileBtn = document.getElementById('remove-file');
+    const processBtn = document.getElementById('process-btn');
+    const uploadSection = document.getElementById('upload-section');
+    const progressSection = document.getElementById('progress-section');
+    const resultSection = document.getElementById('result-section');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const processStat = document.getElementById('process-stat');
+    const tableHeader = document.getElementById('table-header');
+    const tableBody = document.getElementById('table-body');
+    const totalCountEl = document.getElementById('total-count');
+    const successCountEl = document.getElementById('success-count');
+    const failedCountEl = document.getElementById('failed-count');
+    const studentIdCountEl = document.getElementById('student-id-count'); // 新增学籍号统计
+    const downloadBtn = document.getElementById('download-btn');
+    const newProcessBtn = document.getElementById('new-process-btn');
+    const downloadAgainBtn = document.getElementById('download-again-btn');
+    const errorMessage = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+    const sheetNameInput = document.getElementById('sheet-name');
+    const batchProcessCheckbox = document.getElementById('batch-process');
+    const processTimeEl = document.getElementById('process-time');
+    
+    // 仅保留按列位置相关DOM
+    const idColumnPositionInput = document.getElementById('id-column-position');
+    
+    // 初始化Web Worker
+    function initWorker() {
+      if (worker) return;
+      
+      try {
+        // 从内联脚本创建Worker
+        const workerScript = document.getElementById('id-process-worker').textContent;
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        worker = new Worker(url);
+        
+        // 监听Worker消息
+        worker.onmessage = function(e) {
+          const { type, results, message, processed, total, studentIdSuccessCount } = e.data;
+          
+          switch (type) {
+            case 'progress':
+              updateProgress(Math.round((processed / total) * 100), `正在处理数据...`, processed, total);
+              if (studentIdSuccessCount !== undefined) {
+                studentIdSuccessCount = studentIdSuccessCount;
+              }
+              break;
+            case 'complete':
+              finishProcess(results, studentIdSuccessCount);
+              break;
+            case 'error':
+              handleWorkerError(message);
+              break;
+          }
+        };
+        
+        worker.onerror = function(error) {
+          handleWorkerError(`Worker处理错误: ${error.message}`);
+        };
+        
+      } catch (error) {
+        console.warn('Web Worker不受支持，将使用主线程处理', error);
+        worker = null;
+      }
+    }
+    
+    // 销毁Web Worker
+    function destroyWorker() {
+      if (worker) {
+        worker.terminate();
+        worker = null;
+        URL.revokeObjectURL(worker); // 释放Blob URL
+      }
+    }
+    
+    // 初始化事件监听
+    function initEventListeners() {
+      // 初始化Worker
+      initWorker();
+      
+      // 文件选择相关（修复重复弹窗问题）
+      selectFileBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // 阻止事件冒泡
+        fileInput.click();
+      });
+      
+      fileInput.addEventListener('change', (e) => {
+        e.stopPropagation(); // 阻止事件冒泡
+        handleFileSelection(e);
+      });
+      
+      removeFileBtn.addEventListener('click', removeFile);
+      
+      // 拖放相关
+      fileDropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileDropArea.classList.add('active');
+      });
+      
+      fileDropArea.addEventListener('dragleave', () => {
+        fileDropArea.classList.remove('active');
+      });
+      
+      fileDropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        fileDropArea.classList.remove('active');
+        
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleDroppedFile(e.dataTransfer.files[0]);
+        }
+      });
+      
+      // 修复点击区域过广导致的重复弹窗问题
+      fileDropArea.addEventListener('click', (e) => {
+        // 仅当点击的是上传图标/文字区域时才触发文件选择
+        const target = e.target;
+        const isUploadArea = target === fileDropArea || 
+                             target.classList.contains('fa-cloud-upload') ||
+                             target.tagName === 'H3' && target.textContent.includes('拖拽文件到此处') ||
+                             target.tagName === 'P' && target.textContent.includes('支持 .xlsx 和 .xls 格式');
+        
+        if (isUploadArea) {
+          fileInput.click();
+        }
+      });
+      
+      // 按钮点击事件
+      processBtn.addEventListener('click', processFile);
+      downloadBtn.addEventListener('click', downloadExcel);
+      newProcessBtn.addEventListener('click', resetToUpload);
+      downloadAgainBtn.addEventListener('click', downloadExcel);
+      
+      // 输入框变化事件（仅保留按列位置）
+      idColumnPositionInput.addEventListener('input', updateProcessButtonState);
+      sheetNameInput.addEventListener('input', updateProcessButtonState);
+      batchProcessCheckbox.addEventListener('change', updateProcessButtonState);
+    }
+    
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+    
+    // 处理文件选择
+    function handleFileSelection(e) {
+      if (e.target.files && e.target.files[0]) {
+        handleSelectedFile(e.target.files[0]);
+      }
+    }
+    
+    // 处理拖放文件
+    function handleDroppedFile(file) {
+      handleSelectedFile(file);
+    }
+    
+    // 处理选中的文件
+    function handleSelectedFile(file) {
+      // 验证文件类型
+      const fileTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel'
+      ];
+      
+      if (!fileTypes.includes(file.type) && 
+          !file.name.endsWith('.xlsx') && 
+          !file.name.endsWith('.xls')) {
+        showError('请上传有效的Excel文件（.xlsx或.xls格式）');
+        return;
+      }
+      
+      // 验证文件大小（50MB）
+      if (file.size > 50 * 1024 * 1024) {
+        showError('文件大小不能超过50MB');
+        return;
+      }
+      
+      selectedFile = file;
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = formatFileSize(file.size);
+      selectedFileEl.classList.remove('hidden');
+      updateProcessButtonState();
+      hideError();
+    }
+    
+    // 移除已选择的文件
+    function removeFile() {
+      selectedFile = null;
+      fileInput.value = '';
+      selectedFileEl.classList.add('hidden');
+      updateProcessButtonState();
+    }
+    
+    // 转换列位置（如A、B、C）到索引（0、1、2）
+    function columnPositionToIndex(position) {
+      if (!position) return -1;
+      
+      // 转换为大写，去除空格
+      position = position.trim().toUpperCase();
+      
+      let index = 0;
+      for (let i = 0; i < position.length; i++) {
+        const charCode = position.charCodeAt(i);
+        // 检查是否是A-Z之间的字符
+        if (charCode < 65 || charCode > 90) {
+          return -1;
+        }
+        index = index * 26 + (charCode - 65);
+      }
+      
+      return index;
+    }
+    
+    // 验证列位置是否有效
+    function isValidColumnPosition(position) {
+      if (!position) return false;
+      
+      // 转换为大写，去除空格
+      position = position.trim().toUpperCase();
+      
+      // 检查每个字符是否都是A-Z
+      for (let i = 0; i < position.length; i++) {
+        const charCode = position.charCodeAt(i);
+        if (charCode < 65 || charCode > 90) {
+          return false;
+        }
+      }
+      
+      return true;
+    }
+    
+    // 更新处理按钮状态（仅校验列位置）
+    function updateProcessButtonState() {
+      if (!selectedFile) {
+        processBtn.disabled = true;
+        return;
+      }
+      
+      const idColumnPosition = idColumnPositionInput.value.trim();
+      processBtn.disabled = !isValidColumnPosition(idColumnPosition);
+    }
+    
+    // 生成学籍号（主线程备用函数）
+    function generateStudentId(idNumber) {
+      idNumber = idNumber.replace(/\s/g, '');
+      if (!idNumber) return '无身份证号码';
+      if (idNumber.length !== 15 && idNumber.length !== 18) return '生成失败';
+      return 'G' + idNumber;
+    }
+    
+    // 处理Excel文件
+    async function processFile() {
+      if (!selectedFile) return;
+      
+      // 记录开始时间
+      processStartTime = Date.now();
+      studentIdSuccessCount = 0; // 重置学籍号统计
+      
+      // 显示进度区域，隐藏其他区域
+      uploadSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+      resultSection.classList.add('hidden');
+      errorMessage.classList.add('hidden');
+      
+      try {
+        // 读取文件（优化读取配置）
+        updateProgress(10, '正在读取Excel文件...', 0, 1);
+        const data = await readExcelFile(selectedFile);
+        
+        // 解析数据（优化解析效率）
+        updateProgress(25, '正在解析数据...', 0, 1);
+        const sheetName = sheetNameInput.value.trim();
+        const { headers, rows } = parseExcelDataOptimized(data, sheetName);
+        
+        originalHeaders = [...headers];
+        const totalRows = rows.length;
+        
+        if (totalRows === 0) {
+          throw new Error('Excel文件中未找到有效数据行');
+        }
+        
+        // 确定身份证号码列的索引（仅按列位置）
+        updateProgress(30, '正在验证列配置...', 0, totalRows);
+        let idColumnIndex = -1;
+        
+        const idColumnPosition = idColumnPositionInput.value.trim();
+        idColumnIndex = columnPositionToIndex(idColumnPosition);
+        
+        if (idColumnIndex === -1) {
+          throw new Error(`无效的列位置"${idColumnPosition}"，请输入正确的列位置（如A、B、C...）`);
+        }
+        
+        if (idColumnIndex >= headers.length) {
+          throw new Error(`列位置"${idColumnPosition}"超出范围，该Excel文件只有${headers.length}列`);
+        }
+        
+        // 开始处理身份证信息
+        updateProgress(35, '正在识别身份证信息并生成学籍号...', 0, totalRows);
+        
+        // 判断是否使用Worker处理
+        if (batchProcessCheckbox.checked && worker && totalRows > 100) {
+          // 大数据量使用Worker后台处理
+          worker.postMessage({
+            type: 'process',
+            rows: rows,
+            idColumnIndex: idColumnIndex
+          });
+        } else {
+          // 小数据量使用主线程批量处理
+          const { results, studentIdCount } = batchProcessIdsMainThread(rows, idColumnIndex, totalRows);
+          finishProcess(results, studentIdCount);
+        }
+        
+      } catch (error) {
+        const processTime = ((Date.now() - processStartTime) / 1000).toFixed(1);
+        processTimeEl.textContent = processTime;
+        
+        updateProgress(100, '处理失败', 0, 0);
+        setTimeout(() => {
+          progressSection.classList.add('hidden');
+          uploadSection.classList.remove('hidden');
+          showError(error.message || '处理文件时发生错误，请重试');
+        }, 500);
+      }
+    }
+    
+    // 优化的Excel读取函数
+    function readExcelFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            // 优化读取配置：关闭自动格式化，只读取原始数据
+            const workbook = XLSX.read(data, { 
+              type: 'array',
+              cellNF: false, // 不保留数字格式
+              cellStyles: false, // 不读取单元格样式（大幅提升速度）
+              sheetStubs: false // 不处理空单元格
+            });
+            resolve(workbook);
+          } catch (error) {
+            reject(new Error('读取Excel文件失败，请确保文件格式正确'));
+          }
+        };
+        
+        reader.onerror = () => {
+          reject(new Error('读取文件时发生错误'));
+        };
+        
+        // 使用readAsArrayBuffer而非readAsBinaryString，效率更高
+        reader.readAsArrayBuffer(file);
+      });
+    }
+    
+    // 优化的Excel解析函数
+    function parseExcelDataOptimized(workbook, sheetName) {
+      // 确定要读取的工作表
+      const sheetNames = workbook.SheetNames;
+      const targetSheetName = sheetName && sheetNames.includes(sheetName) 
+        ? sheetName 
+        : sheetNames[0];
+      
+      const worksheet = workbook.Sheets[targetSheetName];
+      
+      // 优化解析配置：只读取原始数据，不进行额外处理
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        header: 1,
+        raw: true, // 保留原始数据类型（避免自动转换导致的性能损耗）
+        defval: '' // 空单元格默认值设为''，统一处理
+      });
+      
+      // 提取表头和数据行（优化过滤逻辑）
+      const headers = jsonData[0] || [];
+      const rows = [];
+      
+      // 使用for循环而非filter+slice，效率更高
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        // 快速判断行是否有效（至少有一个非空值）
+        let isValid = false;
+        for (let j = 0; j < row.length; j++) {
+          if (row[j] !== '' && row[j] !== null && row[j] !== undefined) {
+            isValid = true;
+            break; // 找到一个有效值即可，无需继续判断
+          }
+        }
+        if (isValid) {
+          rows.push(row);
+        }
+      }
+      
+      return { headers, rows };
+    }
+    
+    // 主线程批量处理身份证（优化版，新增学籍号）
+    function batchProcessIdsMainThread(rows, idColumnIndex, totalRows) {
+      const results = [];
+      const batchSize = 500; // 每处理500行更新一次进度
+      let studentIdCount = 0; // 学籍号生成成功数
+      
+      // 预分配数组空间（提升性能）
+      results.length = rows.length;
+      
+      // 使用传统for循环（比forEach快30-50%）
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const idNumber = String(row[idColumnIndex] || '').trim();
+        
+        let gender = '';
+        let birthDate = '';
+        let age = '';
+        let studentId = '';
+        let isSuccess = false;
+        let isStudentIdSuccess = false;
+        
+        try {
+          if (idNumber) {
+            const info = parseIdCardOptimized(idNumber);
+            gender = info.gender;
+            birthDate = info.birthDate;
+            age = info.age;
+            studentId = generateStudentId(idNumber);
+            isSuccess = true;
+            isStudentIdSuccess = studentId !== '生成失败';
+            if (isStudentIdSuccess) studentIdCount++;
+          } else {
+            gender = '无身份证号码';
+            birthDate = '';
+            age = '';
+            studentId = '无身份证号码';
+          }
+        } catch (e) {
+          gender = '识别失败';
+          birthDate = '识别失败';
+          age = '识别失败';
+          studentId = generateStudentId(idNumber); // 即使身份证识别失败，也尝试生成学籍号
+          isStudentIdSuccess = studentId !== '生成失败';
+          if (isStudentIdSuccess) studentIdCount++;
+        }
+        
+        results[i] = {
+          row: [...row, gender, birthDate, age, studentId],
+          success: isSuccess,
+          studentIdSuccess: isStudentIdSuccess
+        };
+        
+        // 批量更新进度（减少DOM操作）
+        if (i % batchSize === 0 || i === rows.length - 1) {
+          updateProgress(
+            35 + Math.round((i / totalRows) * 65), 
+            `正在处理数据并生成学籍号...`, 
+            i + 1, 
+            totalRows
+          );
+        }
+      }
+      
+      return {
+        results: results,
+        studentIdCount: studentIdCount
+      };
+    }
+    
+    // 优化的身份证解析函数
+    function parseIdCardOptimized(idNumber) {
+      // 移除空格（使用正则表达式的最快方式）
+      idNumber = idNumber.replace(/\s/g, '');
+      const len = idNumber.length;
+      
+      // 快速判断长度
+      if (len !== 18 && len !== 15) {
+        throw new Error('长度错误');
+      }
+      
+      let birthYear, birthMonth, birthDay;
+      
+      // 避免重复计算substr，直接提取字符
+      if (len === 18) {
+        // 18位身份证：索引6-9年，10-11月，12-13日
+        birthYear = idNumber.substr(6, 4);
+        birthMonth = idNumber.substr(10, 2);
+        birthDay = idNumber.substr(12, 2);
+      } else {
+        // 15位身份证：索引6-7年（加19），8-9月，10-11日
+        birthYear = '19' + idNumber.substr(6, 2);
+        birthMonth = idNumber.substr(8, 2);
+        birthDay = idNumber.substr(10, 2);
+      }
+      
+      // 快速验证日期（避免创建Date对象的开销）
+      if (!isValidDateOptimized(birthYear, birthMonth, birthDay)) {
+        throw new Error('无效日期');
+      }
+      
+      // 计算性别（位运算优化）
+      const genderCode = len === 18 
+        ? parseInt(idNumber.charAt(16), 10) 
+        : parseInt(idNumber.charAt(13), 10);
+      const gender = (genderCode & 1) === 1 ? '男' : '女'; // 位运算比取模快
+      
+      // 计算年龄（缓存当前日期）
+      const age = calculateAgeOptimized(birthYear, birthMonth, birthDay);
+      
+      return {
+        gender,
+        birthDate: `${birthYear}-${birthMonth}-${birthDay}`,
+        age: age.toString()
+      };
+    }
+    
+    // 优化的日期验证（避免创建Date对象）
+    function isValidDateOptimized(year, month, day) {
+      const y = parseInt(year, 10);
+      const m = parseInt(month, 10);
+      const d = parseInt(day, 10);
+      
+      // 快速范围判断
+      if (y < 1900 || y > new Date().getFullYear() || 
+          m < 1 || m > 12 || d < 1 || d > 31) {
+        return false;
+      }
+      
+      // 月份天数验证（只处理特殊月份，其他直接返回true）
+      if (m === 2) {
+        // 二月特殊处理
+        const isLeapYear = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+        return isLeapYear ? d <= 29 : d <= 28;
+      } else if ([4, 6, 9, 11].includes(m)) {
+        // 30天的月份
+        return d <= 30;
+      }
+      
+      return true;
+    }
+    
+    // 优化的年龄计算（避免创建多个Date对象）
+    function calculateAgeOptimized(birthYear, birthMonth, birthDay) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 转换为1-12
+      const currentDay = now.getDate();
+      
+      const y = parseInt(birthYear, 10);
+      const m = parseInt(birthMonth, 10);
+      const d = parseInt(birthDay, 10);
+      
+      // 计算年龄
+      let age = currentYear - y;
+      
+      // 生日未到，年龄减1
+      if (m > currentMonth || (m === currentMonth && d > currentDay)) {
+        age--;
+      }
+      
+      return age < 0 ? 0 : age;
+    }
+    
+    // 更新进度（优化DOM操作频率）
+    function updateProgress(percentage, text, processed = 0, total = 0) {
+      // 使用requestAnimationFrame优化重绘
+      requestAnimationFrame(() => {
+        progressBar.style.width = `${percentage}%`;
+        progressPercentage.textContent = `${percentage}%`;
+        progressText.textContent = text;
+        
+        if (total > 0) {
+          processStat.textContent = `已处理: ${processed} / ${total} 条`;
+        }
+      });
+    }
+    
+    // 完成处理，展示结果（新增学籍号统计）
+    function finishProcess(results, studentIdCount) {
+      // 计算处理时间
+      const processTime = ((Date.now() - processStartTime) / 1000).toFixed(1);
+      studentIdSuccessCount = studentIdCount || 0;
+      
+      // 统计结果（批量统计，避免多次DOM操作）
+      let successCount = 0;
+      const processedRows = [];
+      
+      // 批量处理结果
+      for (let i = 0; i < results.length; i++) {
+        processedRows.push(results[i].row);
+        if (results[i].success) {
+          successCount++;
+        }
+      }
+      
+      const totalCount = processedRows.length;
+      const failedCount = totalCount - successCount;
+      
+      // 构建处理后的数据（新增学籍号列）
+      processedData = {
+        headers: [...originalHeaders, '性别', '出生日期', '年龄', '学籍号'],
+        rows: processedRows,
+        successCount,
+        failedCount,
+        totalCount,
+        studentIdSuccessCount
+      };
+      
+      // 更新进度到100%
+      updateProgress(100, '处理完成', totalCount, totalCount);
+      
+      // 延迟显示结果（让进度条完成动画）
+      setTimeout(() => {
+        displayResultsOptimized(processedData, processTime);
+        progressSection.classList.add('hidden');
+        resultSection.classList.remove('hidden');
+      }, 300);
+    }
+    
+    // 优化的结果展示（批量DOM操作，新增学籍号列）
+    function displayResultsOptimized(data, processTime) {
+      // 更新统计信息（一次DOM操作）
+      totalCountEl.textContent = data.totalCount;
+      successCountEl.textContent = data.successCount;
+      failedCountEl.textContent = data.failedCount;
+      studentIdCountEl.textContent = data.studentIdSuccessCount; // 新增学籍号统计
+      processTimeEl.textContent = processTime;
+      
+      // 清空表格
+      tableHeader.innerHTML = '';
+      tableBody.innerHTML = '';
+      
+      // 生成表头（批量创建，新增学籍号列）
+      let headerHtml = '';
+      data.headers.forEach(header => {
+        headerHtml += `<th>${header}</th>`;
+      });
+      tableHeader.innerHTML = headerHtml;
+      
+      // 生成表格内容（批量构建HTML字符串，减少DOM操作）
+      const displayRows = data.rows.slice(0, 50); // 最多显示50行预览
+      let bodyHtml = '';
+      
+      for (let i = 0; i < displayRows.length; i++) {
+        const row = displayRows[i];
+        bodyHtml += '<tr>';
+        
+        for (let j = 0; j < row.length; j++) {
+          const cell = row[j] !== undefined && row[j] !== null ? row[j] : '';
+          let cellClass = '';
+          
+          // 为识别结果列添加样式
+          if (j >= originalHeaders.length) {
+            if (cell === '男' || cell === '女') {
+              cellClass = 'class="font-medium"';
+            } else if (cell === '识别失败' || cell === '生成失败') {
+              cellClass = 'class="text-danger"';
+            } else if (cell === '无身份证号码') {
+              cellClass = 'class="text-secondary"';
+            } else if (j === originalHeaders.length + 3) { // 学籍号列
+              if (cell.startsWith('G')) {
+                cellClass = 'class="font-medium text-indigo-600"';
+              }
+            }
+          }
+          
+          bodyHtml += `<td ${cellClass}>${cell}</td>`;
+        }
+        
+        bodyHtml += '</tr>';
+      }
+      
+      // 一次性插入DOM（大幅提升性能）
+      tableBody.innerHTML = bodyHtml;
+      
+      // 如果有更多数据，显示提示
+      if (data.rows.length > 50) {
+        const moreHtml = `<tr><td colSpan="${data.headers.length}" class="text-center text-secondary py-3">
+          <i class="fa fa-info-circle mr-1" aria-hidden="true"></i> 仅显示前50行，完整结果请下载Excel文件（共${data.rows.length}行）
+        </td></tr>`;
+        tableBody.insertAdjacentHTML('beforeend', moreHtml);
+      }
+      
+      // 隐藏空状态
+      document.getElementById('result-empty').classList.add('hidden');
+    }
+    
+    // 处理Worker错误
+    function handleWorkerError(message) {
+      const processTime = ((Date.now() - processStartTime) / 1000).toFixed(1);
+      processTimeEl.textContent = processTime;
+      
+      updateProgress(100, '处理失败', 0, 0);
+      setTimeout(() => {
+        progressSection.classList.add('hidden');
+        uploadSection.classList.remove('hidden');
+        showError(message || '后台处理发生错误，请重试或关闭批量处理模式');
+      }, 500);
+    }
+    
+    // 下载Excel文件（优化生成效率，包含学籍号）
+    function downloadExcel() {
+      if (!processedData) return;
+      
+      // 优化Excel生成：使用aoa_to_sheet直接生成，避免中间转换
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        processedData.headers,
+        ...processedData.rows
+      ], {
+        raw: true // 保留原始数据类型
+      });
+      
+      // 优化工作表配置（减少文件大小）
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, '身份证识别结果（含学籍号）');
+      
+      // 生成文件名
+      const originalFileName = selectedFile ? selectedFile.name.replace(/\.[^/.]+$/, "") : '身份证识别结果';
+      const fileName = `${originalFileName}_识别结果_含学籍号_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+      
+      // 下载文件（使用writeFile的优化模式）
+      XLSX.writeFile(workbook, fileName, {
+        bookType: 'xlsx',
+        type: 'binary',
+        compression: true // 启用压缩，减少文件大小
+      });
+    }
+    
+    // 显示错误信息
+    function showError(message) {
+      errorText.textContent = message;
+      errorMessage.classList.remove('hidden');
+    }
+    
+    // 隐藏错误信息
+    function hideError() {
+      errorMessage.classList.add('hidden');
+    }
+    
+    // 重置到上传状态
+    function resetToUpload() {
+      // 销毁Worker（释放资源）
+      destroyWorker();
+      
+      // 重置变量
+      selectedFile = null;
+      processedData = null;
+      originalHeaders = [];
+      processStartTime = 0;
+      studentIdSuccessCount = 0;
+      
+      // 重置UI（仅保留按列位置）
+      fileInput.value = '';
+      selectedFileEl.classList.add('hidden');
+      idColumnPositionInput.value = 'C';
+      sheetNameInput.value = '';
+      batchProcessCheckbox.checked = true;
+      updateProcessButtonState();
+      hideError();
+      
+      // 重新初始化Worker
+      initWorker();
+      
+      // 切换区域显示
+      resultSection.classList.add('hidden');
+      progressSection.classList.add('hidden');
+      uploadSection.classList.remove('hidden');
+    }
+    
+    // 页面卸载时销毁Worker
+    window.addEventListener('beforeunload', () => {
+      destroyWorker();
+    });
+    
+    // 初始化应用
+    function initApp() {
+      initEventListeners();
+      updateProcessButtonState();
+    }
+    
+    // 启动应用
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
