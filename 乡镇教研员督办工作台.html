@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刘老师督办工作台</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --nav-1:#0c2742; --nav-2:#11365c;
+    --bg:#eef3f9;
+    --panel:#ffffff;
+    --border:#dce5f0;
+    --text:#1d2a3a;
+    --muted:#7e8ca3;
+    --accent:#1a6fe0;
+    --accent-d:#0f56b8;
+    --accent-soft:#e8f1fd;
+    --danger:#e5484d;
+    --warn:#e8920c;
+    --ok:#1f9d57;
+    --shadow:0 2px 10px rgba(15,40,80,.06);
+    --shadow-lg:0 6px 22px rgba(15,40,80,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:flex;min-height:100vh}
+
+  /* 侧边导航 - 科技深蓝 */
+  .sidebar{
+    width:224px;flex-shrink:0;background:linear-gradient(180deg,var(--nav-1),var(--nav-2));
+    color:#cdd9e8;padding:0;display:flex;flex-direction:column;position:relative;
+  }
+  .sidebar::after{content:"";position:absolute;top:0;right:0;width:3px;height:100%;
+    background:linear-gradient(180deg,#2b8bff,#16c2d6);}
+  .brand{padding:22px 22px 18px}
+  .brand .logo{display:flex;align-items:center;gap:10px}
+  .brand .logo .sq{width:30px;height:30px;border-radius:8px;
+    background:linear-gradient(135deg,#2b8bff,#16c2d6);display:flex;align-items:center;
+    justify-content:center;font-size:16px;box-shadow:0 4px 12px rgba(43,139,255,.4)}
+  .brand .t1{font-size:15px;font-weight:700;color:#fff;letter-spacing:.5px}
+  .brand .t2{font-size:11px;color:#7f97b8;margin-top:1px}
+  .nav-wrap{padding:6px 12px;flex:1}
+  .nav-label{font-size:11px;color:#5d7398;padding:14px 12px 6px;letter-spacing:1px}
+  .nav-item{
+    display:flex;align-items:center;gap:11px;padding:11px 14px;border-radius:9px;
+    color:#bcccdf;cursor:pointer;margin-bottom:4px;font-size:14px;user-select:none;
+    transition:all .18s;position:relative;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-item.active{background:linear-gradient(90deg,rgba(43,139,255,.22),rgba(43,139,255,.04));color:#fff;font-weight:600}
+  .nav-item.active::before{content:"";position:absolute;left:-12px;top:50%;transform:translateY(-50%);
+    width:3px;height:20px;border-radius:3px;background:#2b8bff;box-shadow:0 0 8px #2b8bff}
+  .nav-item .ico{width:18px;text-align:center;font-size:15px}
+  .side-foot{padding:14px 22px;font-size:11px;color:#5d7398;border-top:1px solid rgba(255,255,255,.07)}
+
+  /* 主区域 */
+  .main{flex:1;min-width:0;padding:24px 30px;overflow:auto}
+  .view{display:none;max-width:1180px;animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+  .page-title{font-size:20px;font-weight:700;position:relative;padding-left:13px}
+  .page-title::before{content:"";position:absolute;left:0;top:3px;bottom:3px;width:4px;border-radius:3px;
+    background:linear-gradient(180deg,#2b8bff,#16c2d6)}
+  .page-sub{color:var(--muted);font-size:13px;margin-top:2px}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:20px;margin-bottom:18px;box-shadow:var(--shadow);
+  }
+  .panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .panel-h h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .panel-h h3 .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+  .panel-h .sub{font-weight:400;color:var(--muted);font-size:12px}
+
+  /* 顶部时钟 */
+  .clockbar{
+    position:sticky;top:0;z-index:5;background:linear-gradient(120deg,#0c2742,#16467a);
+    border-radius:14px;padding:16px 22px;margin-bottom:18px;display:flex;align-items:center;
+    gap:22px;box-shadow:var(--shadow-lg);color:#fff;overflow:hidden;
+  }
+  .clockbar::after{content:"";position:absolute;right:-30px;top:-30px;width:160px;height:160px;
+    background:radial-gradient(circle,rgba(43,139,255,.35),transparent 70%);pointer-events:none}
+  .clockbar .date{font-size:15px;font-weight:600;letter-spacing:.5px}
+  .clockbar .wd{color:#9fb6d6;font-size:12px;margin-top:2px}
+  .clockbar .time{margin-left:auto;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;
+    letter-spacing:2px;color:#7fd8ff;text-shadow:0 0 14px rgba(43,139,255,.5)}
+  .clockbar .live{display:flex;align-items:center;gap:6px;font-size:12px;color:#9fb6d6}
+  .clockbar .live i{width:7px;height:7px;border-radius:50%;background:#3ee08a;box-shadow:0 0 8px #3ee08a;animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* 提醒卡片 */
+  .remind{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+  .remind .rc{border-radius:14px;padding:16px 18px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+  .remind .rc .n{font-size:30px;font-weight:700;line-height:1}
+  .remind .rc .l{font-size:13px;margin-top:6px;opacity:.92}
+  .remind .rc.r0{background:linear-gradient(135deg,#e5484d,#b3272b)}
+  .remind .rc.r1{background:linear-gradient(135deg,#e8920c,#c46a00)}
+  .remind .rc.r2{background:linear-gradient(135deg,#1a6fe0,#0f56b8)}
+  .remind .rc .ic{position:absolute;right:12px;top:12px;font-size:26px;opacity:.25}
+  .remind .rc .list{margin-top:10px;font-size:12px;opacity:.95;max-height:54px;overflow:auto}
+  .remind .rc .list div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* 表单控件 */
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input[type=text],input[type=date],input[type=datetime-local],textarea,select{
+    width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:9px;
+    font-size:14px;font-family:inherit;color:var(--text);background:#fbfdff;outline:none;transition:.15s;
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,111,224,.12);background:#fff}
+  textarea{resize:vertical;min-height:64px}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row > .col{flex:1;min-width:160px}
+  button{
+    font-family:inherit;font-size:13px;cursor:pointer;border:none;border-radius:9px;
+    padding:9px 18px;background:linear-gradient(135deg,var(--accent),var(--accent-d));color:#fff;
+    transition:.18s;box-shadow:0 2px 8px rgba(26,111,224,.25);font-weight:500;
+  }
+  button:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(26,111,224,.35)}
+  button:active{transform:translateY(0)}
+  button.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);box-shadow:none}
+  button.ghost:hover{background:var(--accent-soft);transform:none;box-shadow:none}
+  button.plain{background:#f1f5fb;color:var(--text);border:1px solid var(--border);box-shadow:none}
+  button.plain:hover{background:#e8eef7;transform:none}
+  button.danger{background:linear-gradient(135deg,#e5484d,#b3272b);box-shadow:0 2px 8px rgba(229,72,77,.25)}
+  button.sm{padding:6px 12px;font-size:12px}
+
+  /* 待办列表 */
+  .todo-add{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .todo-add .col{flex:1;min-width:150px}
+  .todo-list{list-style:none;margin-top:4px}
+  .todo{
+    display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);
+    border-radius:10px;margin-bottom:9px;background:#fff;transition:.15s;
+  }
+  .todo:hover{box-shadow:var(--shadow)}
+  .todo.done{opacity:.55;background:#f8fafc}
+  .todo.done .todo-text{text-decoration:line-through}
+  .todo.overdue{border-color:#f3c4c6;background:#fdf4f4}
+  .todo .ck{width:18px;height:18px;flex-shrink:0;cursor:pointer;accent-color:var(--accent)}
+  .todo .todo-text{flex:1;min-width:0;word-break:break-word}
+  .todo .meta{font-size:12px;color:var(--muted);white-space:nowrap}
+  .todo .meta.over{color:var(--danger);font-weight:600}
+  .badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:11px;margin-left:7px;vertical-align:middle}
+  .badge.imp{background:#fdeaea;color:var(--danger)}
+  .badge.nor{background:#eef2f7;color:var(--muted)}
+  .todo .acts{display:flex;gap:6px;flex-shrink:0}
+  .sec-label{font-size:13px;font-weight:600;color:var(--muted);margin:16px 0 8px;display:flex;align-items:center;gap:8px}
+  .sec-label::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--border)}
+  .empty{color:var(--muted);text-align:center;padding:20px;font-size:13px}
+
+  /* 学校列表 */
+  .school-list{display:flex;flex-wrap:wrap;gap:9px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:7px;background:var(--accent-soft);
+    color:var(--accent-d);border:1px solid #cfe1fb;border-radius:22px;padding:6px 13px;font-size:13px;font-weight:500}
+  .chip .x{cursor:pointer;font-weight:700;opacity:.6;font-size:14px}
+  .chip .x:hover{opacity:1;color:var(--danger)}
+  .file-line{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .file-line input[type=file]{flex:1;min-width:200px;padding:7px 10px;border:1px dashed var(--border);border-radius:9px;background:#fbfdff}
+
+  /* 学校勾选 */
+  .school-bulk{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .school-bulk-act{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .school-bulk-act button{padding:3px 11px;font-size:11px;border-radius:7px}
+  .school-bulk-info{font-size:12px;color:var(--muted);margin-left:6px}
+  .school-pick{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px;max-height:220px;overflow:auto;padding:6px}
+  .school-pick .pick{display:flex;align-items:center;gap:7px;background:#f6f9fd;
+    border:1px solid var(--border);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:13px;transition:.15s}
+  .school-pick .pick:hover{border-color:var(--accent)}
+  .school-pick .pick.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-d);font-weight:600}
+  .school-pick .pick input{width:auto;margin:0;accent-color:var(--accent)}
+
+  /* 任务概览表 */
+  .filter-bar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .filter-bar .fitem{display:flex;align-items:center;gap:7px;background:#f6f9fd;border:1px solid var(--border);
+    padding:7px 12px;border-radius:9px}
+  .filter-bar .fitem label{margin:0;color:var(--text);font-size:13px;display:flex;align-items:center;gap:6px}
+  .filter-bar select{width:auto;min-width:150px;padding:6px 10px}
+  .filter-bar input[type=checkbox]{width:auto;accent-color:var(--accent);margin:0}
+  .stat{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+  .stat .s{font-size:12px;padding:5px 12px;border-radius:8px;background:#f1f5fb;color:var(--muted);border:1px solid var(--border)}
+  /* 统计块可点击跳转 */
+  .stat .s.jump{cursor:pointer;transition:.15s;user-select:none}
+  .stat .s.jump:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(20,60,120,.14)}
+  .stat .s.jump.act{font-weight:700;box-shadow:inset 0 0 0 2px currentColor}
+  .stat{scroll-margin-top:12px}
+  .stat .s b{color:var(--text);font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  th,td{border-bottom:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:middle}
+  th{background:#f3f7fc;color:var(--muted);font-weight:600;font-size:12px}
+  tr:last-child td{border-bottom:none}
+  /* 状态色块切换（未完成 / 已完成） */
+  .st-switch{display:inline-flex;gap:6px}
+  .st-opt{
+    font-family:inherit;font-size:12px;line-height:1;padding:6px 11px;border-radius:8px;cursor:pointer;
+    border:1px solid var(--border);background:#fff;color:var(--muted);transition:.15s;
+    display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  }
+  .st-opt::before{content:"";width:8px;height:8px;border-radius:50%;flex-shrink:0;
+    background:var(--border);transition:.15s}
+  .st-opt:hover{border-color:#b9c8dd}
+  .st-opt.on{font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.10)}
+  .st-opt.st-todo::before{background:#d92020}
+  .st-opt.st-done::before{background:#0f5fd0}
+  .st-opt.st-todo.on{background:#ffd9d9;border-color:#e26060;color:#8f1010}
+  .st-opt.st-done.on{background:#cfe3ff;border-color:#6ba5ec;color:#0c4ba0}
+  /* 整行状态底色，一眼区分：未完成红 / 已完成蓝（高对比） */
+  tbody tr.st-todo{background:#ffe6e6}
+  tbody tr.st-done{background:#dfecff}
+  tbody tr.st-todo td,tbody tr.st-done td{border-bottom-color:rgba(0,0,0,.06)}
+  tbody tr.st-todo:hover td{background:#ffd6d6}
+  tbody tr.st-done:hover td{background:#cadffd}
+  tbody tr.st-todo td:first-child{box-shadow:inset 5px 0 0 #d92020}
+  tbody tr.st-done td:first-child{box-shadow:inset 5px 0 0 #0f5fd0}
+  /* 首列学校名按状态着色，整行文字同步强化 */
+  tbody tr.st-todo td:first-child{color:#9c1414;font-weight:700}
+  tbody tr.st-done td:first-child{color:#14468f;font-weight:600}
+  tbody tr.st-todo td{color:#5c1a1a}
+  tbody tr.st-done td{color:#33507e}
+  tbody tr.st-done .st-opt:not(.on){opacity:.62}
+  /* 统计条色点 */
+  .stat .s{display:inline-flex;align-items:center;gap:6px}
+  .stat .s .dotc{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .stat .s.st-total{background:#eef4fd;border-color:#cfe1fb}
+  .stat .s.st-todo{background:#ffe6e6;border-color:#f0aaaa;color:#8f1010}
+  .stat .s.st-done{background:#dfecff;border-color:#9dc0f5;color:#0c4ba0}
+  .stat .s.st-todo b,.stat .s.st-done b{color:inherit;font-size:13px}
+  .task-block{margin-bottom:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .18s}
+  .task-block:hover{box-shadow:var(--shadow)}
+  .task-block .tb-head{
+    padding:12px 16px;background:linear-gradient(90deg,#f3f7fc,#fff);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;
+  }
+  .task-block.folded .tb-head{border-bottom:none}
+  .task-block.folded .tb-body{display:none}
+  .task-block .th-left{flex:1;min-width:0}
+  .task-block .th-name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .task-block .fold-ico{display:inline-block;font-size:11px;color:var(--muted);transition:transform .2s;
+    width:14px;text-align:center;flex-shrink:0}
+  .task-block.folded .fold-ico{transform:rotate(-90deg)}
+  .task-block .th-desc{color:var(--muted);font-size:12px;margin-top:4px}
+  .task-block .th-act{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .prog-bar{width:86px;height:7px;border-radius:6px;background:#ffd9d9;overflow:hidden;flex-shrink:0;box-shadow:inset 0 0 0 1px #f0aaaa}
+  .prog-bar i{display:block;height:100%;border-radius:6px;transition:width .3s ease}
+  .task-block .th-prog{font-size:12px;color:var(--muted);white-space:nowrap}
+  .task-block .th-prog b{color:var(--ok);font-size:13px}
+  .task-block.folded .th-prog{display:inline}
+  .task-block:not(.folded) .th-prog{display:none}
+  .task-block .tb-body{padding:12px 16px}
+  .task-block .th-del{padding:4px 11px;font-size:11px;border-radius:7px}
+  .pill{display:inline-block;font-size:11px;padding:3px 9px;border-radius:11px;color:#fff;white-space:nowrap;font-weight:500}
+  .pill.s0{background:#9aa3b2}
+  .pill.s1{background:var(--accent)}
+  .pill.s2{background:var(--warn)}
+  .pill.s3{background:var(--ok)}
+  .tbl-scroll{overflow-x:auto}
+
+  /* 备份 */
+  .warn-box{background:#fff8ec;border:1px solid #f3dcb0;color:#9a6b15;
+    padding:13px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:flex;gap:8px;align-items:flex-start}
+  .warn-box b{color:#b3740c}
+  .backup-acts{display:flex;gap:12px;flex-wrap:wrap}
+
+  /* ===== 云同步 ===== */
+  .sync-status{display:flex;align-items:center;gap:9px;font-size:13px;padding:11px 14px;border-radius:10px;
+    background:#f6f9fd;border:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap}
+  .sync-status .dot{width:9px;height:9px;border-radius:50%;background:#9aa3b2;flex-shrink:0}
+  .sync-status.on{border-color:#a8dcc0;background:#f2fbf6}
+  .sync-status.on .dot{background:#1f9d57;box-shadow:0 0 0 3px rgba(31,157,87,.16)}
+  .sync-status.err{border-color:#f2b6b8;background:#fdf4f4}
+  .sync-status.err .dot{background:#e5484d;box-shadow:0 0 0 3px rgba(229,72,77,.16)}
+  .sync-status.busy .dot{background:#e8920c;animation:pulse 1s infinite}
+  .sync-status .txt{flex:1;min-width:120px;font-weight:600}
+  .sync-status .tm{color:var(--muted);font-size:12px}
+  /* 三步上手引导 */
+  /* 本地文件打开时的「数据搬家」区块 */
+  .move-box{
+    margin:14px 0 4px;padding:16px 18px;border-radius:12px;
+    background:linear-gradient(135deg,#eef4ff,#f7f0ff);
+    border:1px solid #cfdffb;
+  }
+  .move-box .mb-head{font-size:15px;font-weight:700;color:#1a4a9e;margin-bottom:6px}
+  .move-box .mb-tip{font-size:13px;color:#4a5568;line-height:1.75}
+  .move-box .mb-stat{
+    margin:12px 0;font-size:13px;color:#1a4a9e;font-weight:600;
+    background:rgba(255,255,255,.72);border-radius:8px;padding:9px 12px;
+  }
+  .move-box .mb-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .move-box .mb-row input{
+    flex:1;min-width:180px;padding:11px 13px;font-size:15px;
+    border:1px solid #c3d5f5;border-radius:9px;background:#fff;outline:none;
+  }
+  .move-box .mb-row input:focus{border-color:#2b6fe0;box-shadow:0 0 0 3px rgba(43,111,224,.12)}
+  .move-box .mb-row button{padding:11px 22px;white-space:nowrap}
+  .mb-link-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  .mb-link{
+    display:inline-block;padding:11px 20px;background:#0f9d58;color:#fff;border-radius:9px;
+    text-decoration:none;font-size:14px;font-weight:600;
+  }
+  .mb-link:hover{background:#0c8148}
+  .mb-msg{margin-top:12px;font-size:13px;padding:10px 13px;border-radius:9px;line-height:1.7}
+  .mb-msg.ok{background:#e9f7ef;border:1px solid #b7e4c9;color:#146b3d}
+  .mb-msg.err{background:#fdecea;border:1px solid #f5bdb8;color:#a01c13}
+  .mb-msg.warn{background:#fff6e8;border:1px solid #f5d9a8;color:#8a5600}
+  .mb-msg.info{background:#e8f1fd;border:1px solid #b9d4f8;color:#14498f}
+  @media(max-width:768px){
+    .move-box .mb-row{flex-direction:column}
+    .move-box .mb-row button{width:100%}
+    .mb-link-row{flex-direction:column;align-items:stretch}
+    .mb-link{text-align:center}
+  }
+  .sync-easy{margin:14px 0 4px}
+  .se-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .se-step{display:flex;gap:10px;align-items:flex-start;background:#f6f9fd;border:1px solid #e3ecf8;
+           border-radius:10px;padding:11px 13px}
+  .se-step i{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;
+             font-size:12px;font-style:normal;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .se-step b{font-size:13px}
+  .se-step span{font-size:12px;color:var(--muted);line-height:1.6}
+  .sync-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  .sync-grid .full{grid-column:1/-1}
+  .sync-tip{font-size:12px;color:var(--muted);margin-top:5px}
+  .sync-btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+  .sync-btn-row button{min-width:104px}
+  .sync-help{margin-top:16px;border-top:1px dashed var(--border);padding-top:12px}
+  .sync-help summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;outline:none;user-select:none}
+  .sync-help .steps{margin:10px 0 0 18px;font-size:13px;color:var(--text);line-height:1.9}
+  .sync-help pre{background:#0f2038;color:#cfe3ff;padding:12px 14px;border-radius:9px;font-size:12px;
+    overflow:auto;margin-top:10px;line-height:1.65;white-space:pre-wrap;word-break:break-all}
+  .switch{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer}
+  .switch input{width:18px;height:18px;accent-color:var(--accent);margin:0}
+  .sync-flag{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:4px 11px;border-radius:20px;
+    background:rgba(255,255,255,.13);color:#dce8f7;white-space:nowrap;flex-shrink:0;cursor:pointer}
+  .sync-flag i{width:6px;height:6px;border-radius:50%;background:#9fb6d6;flex-shrink:0}
+  .sync-flag.on i{background:#3ee08a;box-shadow:0 0 7px #3ee08a}
+  .sync-flag.err i{background:#ff8a8a}
+  .sync-flag.busy i{background:#ffc766;animation:pulse 1s infinite}
+
+  /* ===== 响应式：中等屏（笔记本/平板横屏） ===== */
+  @media(max-width:1200px){
+    .main{padding:20px 22px}
+  }
+  @media(max-width:1000px){
+    .sidebar{width:186px}
+    .brand{padding:18px 16px 14px}
+    .nav-item{padding:10px 12px;font-size:13px}
+    .filter-bar select{min-width:120px}
+    .prog-bar{width:66px}
+  }
+
+  /* ===== 响应式：手机 ===== */
+  @media(max-width:768px){
+    html{-webkit-text-size-adjust:100%}
+    body{font-size:15px}
+    .app{flex-direction:column}
+    /* 侧边栏 → 底部标签栏，拇指可达 */
+    .sidebar{
+      position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;height:auto;
+      flex-direction:row;align-items:stretch;z-index:60;
+      padding-bottom:env(safe-area-inset-bottom);
+      background:linear-gradient(180deg,var(--nav-2),var(--nav-1));
+      box-shadow:0 -3px 14px rgba(10,30,60,.18);
+    }
+    .sidebar::after{display:none}
+    .brand,.nav-label,.side-foot{display:none}
+    .nav-wrap{display:flex;padding:5px 5px;gap:3px;flex:1;width:100%}
+    .nav-item{
+      flex:1;flex-direction:column;gap:3px;padding:7px 2px;font-size:11px;margin:0;
+      justify-content:center;align-items:center;min-height:54px;border-radius:10px;white-space:nowrap;
+    }
+    .nav-item .ico{width:auto;font-size:18px;line-height:1}
+    .nav-item.active{background:rgba(43,139,255,.22)}
+    .nav-item.active::before{display:none}
+    .main{padding:12px 12px calc(74px + env(safe-area-inset-bottom));width:100%}
+    .view{max-width:100%}
+
+    /* 面板与标题 */
+    .panel{padding:14px 13px;border-radius:12px;margin-bottom:14px}
+    .panel-h{margin-bottom:12px;gap:8px;flex-wrap:wrap}
+    .panel-h h3{font-size:14px}
+    .panel-h .sub{display:none}
+    .page-head{margin-bottom:14px}
+    .page-title{font-size:18px}
+    .page-sub{font-size:12px}
+
+    /* 顶部时钟条 */
+    .clockbar{padding:13px 15px;gap:6px;border-radius:12px;flex-wrap:wrap;align-items:center}
+    .clockbar .date{font-size:14px}
+    .clockbar .time{font-size:23px;margin-left:auto;letter-spacing:1px}
+    .clockbar .live{order:3;flex-basis:100%;margin-top:2px}
+    .sync-flag{order:4;flex-basis:100%;justify-content:center;margin-top:6px}
+
+    /* 提醒卡片 */
+    .remind{grid-template-columns:1fr;gap:10px}
+    .remind .rc{padding:13px 15px}
+    .remind .rc .n{font-size:26px}
+    .remind .rc .list{max-height:none}
+
+    /* 表单：16px 防 iOS 自动缩放，按钮加高便于点按 */
+    input[type=text],input[type=date],input[type=datetime-local],textarea,select{font-size:16px;padding:11px 12px}
+    button{min-height:42px;padding:10px 18px;font-size:14px;width:auto}
+    button.sm{min-height:34px;padding:7px 13px;font-size:12px}
+    .row{flex-direction:column;gap:12px;align-items:stretch!important}
+    .row > .col,.todo-add .col{min-width:0!important;max-width:none!important;flex:1 1 100%!important}
+    .row .col button{width:100%}
+    /* 手机端隐藏纯占位标签（&nbsp;），避免按钮上方留空行 */
+    .row .col label.ph{display:none}
+    .todo-add{gap:12px}
+    label{font-size:12px}
+
+    /* 待办条目：勾选框+标题同一行，操作按钮靠右，截止信息独占一行 */
+    .todo{padding:12px;flex-wrap:wrap;gap:8px 10px;align-items:flex-start}
+    .todo .ck{width:21px;height:21px;order:0;flex-shrink:0;margin-top:2px}
+    .todo .todo-text{flex:1 1 0;min-width:0;order:1;font-size:15px;line-height:1.5}
+    .todo .acts{order:2;margin-left:auto;flex-shrink:0}
+    .todo .meta{flex:1 1 100%;order:3;white-space:normal;padding-left:31px}
+    .todo .badge{margin-left:7px;margin-top:1px}
+    /* 编辑态：三个输入项纵向铺满，不再横向挤压 */
+    .todo input#eText,.todo input#eDue,.todo select#ePri{flex:1 1 100%!important;max-width:none!important;width:100%}
+
+    /* 筛选栏 */
+    .filter-bar{gap:9px}
+    .filter-bar .fitem{width:100%;padding:8px 12px}
+    .filter-bar select{width:100%;min-width:0;flex:1}
+    .filter-bar .fitem:last-child{margin-left:0!important}
+    .filter-bar .fitem:last-child button{flex:1}
+    .stat{gap:7px}
+    .stat .s{padding:5px 10px;font-size:12px}
+
+    /* 表格 → 卡片（手机核心改造） */
+    .tbl-scroll{overflow:visible}
+    table{border:none;border-radius:0;display:block;font-size:14px}
+    thead{display:none}
+    tbody{display:block}
+    tbody tr{
+      display:block;border:1px solid var(--border);border-radius:11px;margin-bottom:9px;
+      padding:10px 13px 11px 16px;background:#fff;position:relative;overflow:hidden;
+    }
+    tbody tr.st-todo{background:#ffe6e6;border-color:#f0aaaa}
+    tbody tr.st-done{background:#dfecff;border-color:#9dc0f5}
+    tbody tr::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px}
+    tbody tr.st-todo::before{background:#d92020}
+    tbody tr.st-done::before{background:#0f5fd0}
+    tbody tr.st-todo:hover td,tbody tr.st-done:hover td{background:transparent}
+    tbody td{
+      display:flex;gap:10px;align-items:center;border:none!important;padding:5px 0!important;
+      color:var(--text)!important;box-shadow:none!important;font-weight:400!important;
+    }
+    tbody td::before{content:attr(data-label);flex:0 0 54px;font-size:12px;color:var(--muted)}
+    tbody td:first-child{font-size:15px;padding-bottom:7px!important}
+    tbody tr.st-todo td:first-child{color:#9c1414!important;font-weight:700!important}
+    tbody tr.st-done td:first-child{color:#14468f!important;font-weight:600!important}
+    tbody td:first-child::before{display:none}
+    tbody td input[type=text]{width:100%;min-width:0}
+    tbody tr.st-done .st-opt:not(.on){opacity:.62}
+    .st-switch{flex:1;min-width:0;display:flex}
+    .st-opt{flex:1;justify-content:center;padding:9px 8px;font-size:13px}
+
+    /* 任务块 */
+    .task-block .tb-head{flex-direction:column;align-items:flex-start;gap:9px;padding:11px 13px}
+    .task-block .th-name{font-size:14px;gap:7px}
+    .task-block .th-act{width:100%;justify-content:space-between;gap:8px}
+    .task-block .th-del{padding:6px 12px;font-size:11px}
+    .task-block .tb-body{padding:10px 11px}
+    .prog-bar{width:56px}
+
+    /* 学校勾选 */
+    .school-pick{max-height:none;gap:8px;padding:4px}
+    .school-pick .pick{padding:9px 12px;font-size:14px}
+    .school-bulk{gap:8px}
+    .school-bulk-act button{padding:7px 13px;font-size:12px;min-height:32px}
+    .school-list .chip{font-size:14px;padding:7px 14px}
+
+    /* 备份 / 同步 */
+    .backup-acts{flex-direction:column}
+    .backup-acts button{width:100%}
+    .file-line{flex-direction:column;align-items:stretch}
+    .file-line input[type=file]{width:100%}
+    .se-steps{grid-template-columns:1fr}
+    .sync-grid{grid-template-columns:1fr;gap:12px}
+    .sync-btn-row{flex-direction:column}
+    .sync-btn-row button{width:100%;min-width:0}
+    .warn-box{font-size:13px;padding:12px 14px}
+  }
+
+  /* ===== 小屏手机 ===== */
+  @media(max-width:400px){
+    .clockbar .time{font-size:20px}
+    .nav-item{font-size:10px;min-height:52px}
+    .nav-item .ico{font-size:17px}
+    .remind .rc .n{font-size:24px}
+    tbody td::before{flex:0 0 46px}
+  }
+
+  /* ===== 打印/大屏 ===== */
+  @media(min-width:1600px){
+    .view{max-width:1320px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">
+        <div class="sq">📊</div>
+        <div>
+          <div class="t1">刘老师督办工作台</div>
+          <div class="t2"></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-wrap">
+      <div class="nav-label">工作导航</div>
+      <div class="nav-item active" data-view="home"><span class="ico">📋</span>首页待办</div>
+      <div class="nav-item" data-view="supervise"><span class="ico">🏫</span>学校任务督办</div>
+      <div class="nav-item" data-view="backup"><span class="ico">💾</span>数据备份</div>
+    </div>
+    <div class="side-foot">本地数据存储 · 自动保存</div>
+  </aside>
+
+  <main class="main">
+    <!-- ============ 首页待办 ============ -->
+    <section class="view active" id="view-home">
+      <div class="clockbar">
+        <div>
+          <div class="date" id="clkDate">--</div>
+          <div class="wd" id="clkWeek">--</div>
+        </div>
+        <div class="live"><i></i>实时</div>
+        <div class="time" id="clkTime">--:--:--</div>
+        <div class="sync-flag" id="syncFlag" title="点击前往云同步设置"><i></i><span id="syncFlagTxt">未开启云同步</span></div>
+      </div>
+
+      <div class="remind" id="remindBox"></div>
+
+      <div class="panel">
+        <div class="panel-h">
+          <h3><span class="dot"></span>个人待办清单 <span class="sub">新增一条待办</span></h3>
+        </div>
+        <div class="todo-add">
+          <div class="col" style="flex:2;min-width:200px">
+            <label>任务内容</label>
+            <input type="text" id="todoText" placeholder="例如：汇总本周各校教研情况">
+          </div>
+          <div class="col">
+            <label>截止时间</label>
+            <input type="datetime-local" id="todoDue" step="60">
+          </div>
+          <div class="col" style="max-width:140px">
+            <label>优先级</label>
+            <select id="todoPri">
+              <option value="normal">普通</option>
+              <option value="important">重要</option>
+            </select>
+          </div>
+          <div class="col" style="max-width:100px">
+            <label>&nbsp;</label>
+            <button id="todoAdd">添加任务</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">
+          <h3><span class="dot"></span>任务清单 <span class="sub" id="unfinCount"></span></h3>
+        </div>
+        <ul class="todo-list" id="todoUnfin"></ul>
+        <div class="sec-label">已完成</div>
+        <ul class="todo-list" id="todoFin"></ul>
+      </div>
+    </section>
+
+    <!-- ============ 学校任务督办 ============ -->
+    <section class="view" id="view-supervise">
+      <div class="page-head">
+        <div>
+          <div class="page-title">学校任务督办</div>
+          <div class="page-sub">管理管辖学校、下发教研任务并跟踪推进进度</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h3><span class="dot"></span>学校管理 <span class="sub">上传Excel批量导入，或手动新增</span></h3></div>
+        <div class="file-line">
+          <input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
+          <button class="ghost sm" id="excelImport">导入Excel</button>
+          <span id="excelTip" style="color:var(--muted);font-size:12px"></span>
+        </div>
+        <div class="row" style="align-items:flex-end">
+          <div class="col" style="flex:2;min-width:200px">
+            <label>手动新增学校名称</label>
+            <input type="text" id="schoolName" placeholder="例如：王庄镇第一中心小学">
+          </div>
+          <div class="col" style="max-width:100px">
+            <label class="ph">&nbsp;</label>
+            <button id="schoolAdd">添加</button>
+          </div>
+        </div>
+        <div class="school-list" id="schoolList" style="margin-top:14px"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h3><span class="dot"></span>新建任务</h3></div>
+        <div class="row">
+          <div class="col" style="flex:2;min-width:200px">
+            <label>任务名称</label>
+            <input type="text" id="taskName" placeholder="例如：秋季学期听课评课活动">
+          </div>
+          <div class="col">
+            <label>截止时间</label>
+            <input type="datetime-local" id="taskDeadline">
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label>任务说明</label>
+          <textarea id="taskDesc" placeholder="填写任务的具体要求、标准等"></textarea>
+        </div>
+        <div style="margin-top:12px">
+          <div class="school-bulk">
+            <label style="margin:0">下发学校（勾选）</label>
+            <span class="school-bulk-act">
+              <button type="button" class="sm plain" data-school-bulk="all">全选</button>
+              <button type="button" class="sm plain" data-school-bulk="inv">反选</button>
+              <button type="button" class="sm plain" data-school-bulk="none">清空</button>
+              <span class="school-bulk-info" id="schoolBulkInfo"></span>
+            </span>
+          </div>
+          <div class="school-pick" id="taskSchools"></div>
+        </div>
+        <div style="margin-top:16px">
+          <button id="taskCreate">创建任务并下发</button>
+          <span id="taskTip" style="color:var(--muted);font-size:12px;margin-left:12px"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h3><span class="dot"></span>任务总览 <span class="sub">点击标题栏可折叠/展开，切换状态、填写备注与跟进</span></h3></div>
+        <div class="filter-bar">
+          <div class="fitem">
+            <label><input type="checkbox" id="filterUnfin">只看未完成任务</label>
+          </div>
+          <div class="fitem">
+            <span style="font-size:13px;color:var(--muted)">任务</span>
+            <select id="filterTask"></select>
+          </div>
+          <div class="fitem">
+            <span style="font-size:13px;color:var(--muted)">学校</span>
+            <select id="filterSchool"></select>
+          </div>
+          <div class="fitem" style="margin-left:auto">
+            <button type="button" class="sm plain" id="btnFoldAll">全部折叠</button>
+            <button type="button" class="sm plain" id="btnUnfoldAll">全部展开</button>
+          </div>
+        </div>
+        <div class="stat" id="statBar"></div>
+        <div id="overview" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <!-- ============ 数据备份 ============ -->
+    <section class="view" id="view-backup">
+      <div class="page-head">
+        <div>
+          <div class="page-title">数据与同步</div>
+          <div class="page-sub">云端同步让电脑与手机数据实时一致；定期导出备份更稳妥</div>
+        </div>
+      </div>
+
+      <!-- ============ 云端同步 ============ -->
+      <div class="panel">
+        <div class="panel-h"><h3><span class="dot"></span>云端同步 <span class="sub">填一个同步码，电脑手机自动一致</span></h3></div>
+
+        <div class="sync-status" id="syncState">
+          <span class="dot"></span>
+          <span class="txt" id="syncStateTxt">未开启</span>
+          <span class="tm" id="syncStateTm"></span>
+        </div>
+
+        <!-- 本地文件打开时显示：把数据一次性搬到云端 -->
+        <div class="move-box" id="moveBox" style="display:none">
+          <div class="mb-head">📦 把这份文件里的数据搬到云端</div>
+          <div class="mb-tip">
+            您现在是<b>双击打开本地文件</b>，这种方式浏览器不允许自动同步。
+            点下面的按钮，可把这份文件里的数据<b>一次性上传到在线网址</b>——之后在网址上用，手机电脑就能自动同步了。
+          </div>
+          <div class="mb-stat" id="moveStat"></div>
+          <div class="mb-row">
+            <input type="text" id="moveRoom" placeholder="起个同步码，例如 wangzhuang-2026" autocomplete="off" spellcheck="false">
+            <button type="button" id="btnMove">上传到云端</button>
+          </div>
+          <div class="mb-tip" style="margin-top:8px;font-size:12px">同步码 2~40 位，可用中文、字母、数字、- 或 _。手机上不用填，上传后会给您一条现成的链接。</div>
+          <div id="moveMsg"></div>
+          <div id="moveDone" style="display:none">
+            <div class="mb-link-row">
+              <a class="mb-link" id="moveLink" href="#" target="_blank" rel="noopener">打开在线工作台（已带同步码）→</a>
+              <button type="button" class="ghost" id="btnMoveCopy">复制链接发给手机</button>
+            </div>
+            <div class="mb-tip" style="margin-top:10px">
+              💡 把链接用微信发给自己，在手机浏览器点开 → 数据自动接上，一个字都不用填。
+            </div>
+          </div>
+        </div>
+
+        <div class="sync-easy">
+          <div class="se-steps">
+            <div class="se-step"><i>1</i><div><b>在这台设备起个同步码</b><br><span>下面填一个只有你知道的名字，点「开启同步」</span></div></div>
+            <div class="se-step"><i>2</i><div><b>在另一台设备打开同一网址</b><br><span>手机上用浏览器打开这个页面</span></div></div>
+            <div class="se-step"><i>3</i><div><b>填同一个同步码</b><br><span>点「开启同步」，数据立刻一致，之后自动同步</span></div></div>
+          </div>
+        </div>
+
+        <div class="sync-grid">
+          <div>
+            <label>同步码（自己起，两台设备填一样的）</label>
+            <input type="text" id="syncSpace" placeholder="例如：wangzhuang-2026" autocomplete="off" spellcheck="false">
+            <div class="sync-tip">2~40 位，可用中文、字母、数字、- 或 _。建议起个别人猜不到的，别人猜到就能看到你的数据。</div>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <label class="switch" style="margin-top:4px"><input type="checkbox" id="syncAuto" checked> 自动同步（改动后自动上传，打开页面自动拉取）</label>
+            <div class="sync-tip">关闭后只能手动点按钮同步</div>
+          </div>
+        </div>
+
+        <div class="sync-btn-row">
+          <button id="btnSyncSave">开启同步</button>
+          <button class="plain" id="btnSyncPush">上传到云端</button>
+          <button class="plain" id="btnSyncPull">从云端拉取</button>
+          <button class="ghost" id="btnSyncClear" style="color:var(--danger);border-color:#f2b6b8">关闭同步</button>
+        </div>
+
+        <details class="sync-help">
+          <summary>常见问题（点开）</summary>
+          <ol class="steps">
+            <li><b>要不要注册账号？</b>不用。这个页面自带云端存储，您只需要记住同步码。</li>
+            <li><b>同步码忘了怎么办？</b>打开原来的设备，这里还显示着。实在找不到就重新起一个，但新码里是空的，需要重新录。</li>
+            <li><b>数据会不会丢？</b>数据同时存在您的浏览器和云端，双保险。不过建议偶尔在下面「本地备份」导出一份留底。</li>
+            <li><b>两台设备都改了会怎样？</b>不会互相覆盖，会弹窗让您选保留哪一份。</li>
+            <li><b>手机怎么打开？</b>手机浏览器输入这个网址即可，可在浏览器菜单里选「添加到主屏幕」，用起来跟 App 一样。</li>
+          </ol>
+        </details>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><h3><span class="dot"></span>本地备份 <span class="sub">导出 / 导入 JSON 文件</span></h3></div>
+        <div class="warn-box">⚠️ <div><b>重要提醒：</b>数据同时保存在本机浏览器与云端。清理缓存、更换设备前，建议先导出一份备份文件留存。</div></div>
+        <div class="backup-acts">
+          <button id="btnExport">导出全部备份（JSON）</button>
+          <button class="ghost" id="btnImportPick">导入备份恢复数据</button>
+          <input type="file" id="importFile" accept=".json" style="display:none">
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:14px" id="backupInfo"></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ===================== 存储层 ===================== */
+/* SYNC_SILENT：拉取云端数据落地时置为 true，避免"应用云端数据"反过来触发上传 */
+var SYNC_SILENT = false;   // 应用云端数据期间静默
+var pendingLocal = false;  // 本地有未上传的改动
+const LS = {
+  get(k,def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } },
+  set(k,v){
+    localStorage.setItem(k, JSON.stringify(v));
+    /* 数据键发生变更 → 标记本地有改动，延迟自动上传（配置键与迁移标记不算数据变更） */
+    if(!SYNC_SILENT && k!=='yr_sync' && k!=='yr_st_migrated'){ pendingLocal = true; scheduleSync(); }
+  }
+};
+const K = { todos:'yr_todos', schools:'yr_schools', tasks:'yr_tasks', stasks:'yr_stasks', fold:'yr_taskFold' };
+/* 统计块点击跳转的状态筛选：all=全部 todo=只看未完成 done=只看已完成 */
+let statMode = 'all';
+
+/* ===================== 工具 ===================== */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+/* 学校任务完成状态：0=未完成（红） 1=已完成（蓝） */
+const STATUS  = ['未完成','已完成'];
+const ST_COLOR= ['#d92020','#0f5fd0'];   // 色点（高饱和）
+const ST_BG   = ['#ffd9d9','#cfe3ff'];   // 选中底色
+const ST_BD   = ['#e26060','#6ba5ec'];   // 选中描边
+const ST_FG   = ['#8f1010','#0c4ba0'];   // 选中文字
+const ST_ROW  = ['st-todo','st-done'];   // 整行 class
+const P = n => String(n).padStart(2,'0');
+/* 本地日期 YYYY-MM-DD（避免 toISOString 的 UTC 时区偏差） */
+const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${P(d.getMonth()+1)}-${P(d.getDate())}`; };
+const esc = s => (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
+  return `${d.getFullYear()}-${P(d.getMonth()+1)}-${P(d.getDate())}`; }
+
+/* ===== 截止时间（精确到分钟）工具集 ===== */
+/* due 兼容两种格式：'YYYY-MM-DDTHH:mm'（新） / 'YYYY-MM-DD'（旧数据，按当日 23:59 计） */
+const dueDay = due => (due||'').slice(0,10);                       // 取日期部分
+const dueHasTime = due => /T\d{2}:\d{2}/.test(due||'');            // 是否带具体时间
+function dueTs(due){                                               // 转成时间戳，空则返回 0
+  if(!due) return 0;
+  const t = dueHasTime(due) ? new Date(due.replace('T',' ')+':00').getTime()
+                            : new Date(due+' 23:59:00').getTime();
+  return isNaN(t)?0:t;
+}
+function fmtDue(due){                                              // 显示：09-02 17:30 / 09-02（全天）
+  if(!due) return '';
+  const d = dueDay(due), y = d.slice(0,4), cy = String(new Date().getFullYear());
+  const datePart = y===cy ? d.slice(5) : d;
+  return dueHasTime(due) ? `${datePart} ${due.slice(11,16)}` : `${datePart} 全天`;
+}
+function leftText(due){                                            // 还剩 / 已逾期
+  const ts = dueTs(due); if(!ts) return '';
+  const diff = ts - Date.now(), abs = Math.abs(diff);
+  const d = Math.floor(abs/864e5), h = Math.floor(abs%864e5/36e5), m = Math.floor(abs%36e5/6e4);
+  const seg = d>0 ? `${d}天${h}小时` : (h>0 ? `${h}小时${m}分` : `${m}分钟`);
+  return diff>=0 ? `还剩${seg}` : `已逾期${seg}`;
+}
+
+/* ===================== 导航 ===================== */
+document.querySelectorAll('.nav-item').forEach(n=>{
+  n.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    n.classList.add('active');
+    $('#view-'+n.dataset.view).classList.add('active');
+    if(n.dataset.view==='supervise'){ renderTaskSchools(); renderOverview(); }
+    if(n.dataset.view==='home'){ renderRemind(); }
+  });
+});
+
+/* ===================== 时钟 ===================== */
+const WK = ['日','一','二','三','四','五','六'];
+function tick(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  $('#clkDate').textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+  $('#clkWeek').textContent = '星期'+WK[d.getDay()];
+  $('#clkTime').textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+setInterval(tick,1000); tick();
+
+/* ===================== 待办 + 到期提醒 ===================== */
+let editingId = null;
+function renderRemind(){
+  const todos = LS.get(K.todos,[]).filter(t=>!t.done);
+  const t = todayStr(), now = Date.now();
+  const overdue = todos.filter(x=>{ const ts=dueTs(x.due); return ts && ts<now; });
+  const today   = todos.filter(x=>{ const ts=dueTs(x.due); return ts && ts>=now && dueDay(x.due)===t; });
+  const soon    = todos.filter(x=>{ const ts=dueTs(x.due); return ts>now && dueDay(x.due)<=addDays(t,3); });
+  const listHTML = arr => arr.length
+    ? arr.slice(0,3).map(x=>`<div>· ${esc(x.content)}（${fmtDue(x.due)}）</div>`).join('')
+    : '<div>暂无</div>';
+  $('#remindBox').innerHTML = `
+    <div class="rc r0"><div class="ic">⏰</div><div class="n">${overdue.length}</div><div class="l">已逾期任务</div><div class="list">${listHTML(overdue)}</div></div>
+    <div class="rc r1"><div class="ic">📌</div><div class="n">${today.length}</div><div class="l">今日到期</div><div class="list">${listHTML(today)}</div></div>
+    <div class="rc r2"><div class="ic">🔔</div><div class="n">${soon.length}</div><div class="l">3日内待办</div><div class="list">${listHTML(soon)}</div></div>`;
+}
+function renderTodos(){
+  const todos = LS.get(K.todos,[]);
+  const now = Date.now();
+  const unfin = todos.filter(x=>!x.done).sort((a,b)=>{
+    if((a.pri==='important')!==(b.pri==='important')) return a.pri==='important'?-1:1;
+    const ta = dueTs(a.due), tb = dueTs(b.due);
+    if(!ta) return 1; if(!tb) return -1;          // 无截止时间的排最后
+    return ta-tb;
+  });
+  const fin = todos.filter(x=>x.done).reverse();
+  $('#unfinCount').textContent = unfin.length?`未完成 ${unfin.length} 项`:'';
+  const itemHTML = (x,finished)=>{
+    const overdue = !finished && dueTs(x.due) && dueTs(x.due) < now;
+    if(editingId===x.id){
+      return `<li class="todo">
+        <input type="text" id="eText" value="${esc(x.content)}" style="flex:1">
+        <input type="datetime-local" id="eDue" step="60" value="${x.due||''}" style="max-width:190px">
+        <select id="ePri" style="max-width:115px">
+          <option value="normal"${x.pri==='normal'?' selected':''}>普通</option>
+          <option value="important"${x.pri==='important'?' selected':''}>重要</option>
+        </select>
+        <div class="acts">
+          <button class="sm" data-act="save" data-id="${x.id}">保存</button>
+          <button class="sm plain" data-act="cancel" data-id="${x.id}">取消</button>
+        </div></li>`;
+    }
+    return `<li class="todo ${finished?'done':''} ${overdue?'overdue':''}">
+      <input type="checkbox" class="ck" ${finished?'checked':''} data-act="toggle" data-id="${x.id}">
+      <div class="todo-text">${esc(x.content)}
+        <span class="badge ${x.pri==='important'?'imp':'nor'}">${x.pri==='important'?'重要':'普通'}</span>
+      </div>
+      <div class="meta ${overdue?'over':''}">${x.due?(overdue
+        ? `${leftText(x.due)} · 截止 ${fmtDue(x.due)}`
+        : `截止 ${fmtDue(x.due)} · ${leftText(x.due)}`):''}</div>
+      <div class="acts">
+        <button class="sm plain" data-act="edit" data-id="${x.id}">编辑</button>
+        <button class="sm danger" data-act="del" data-id="${x.id}">删除</button>
+      </div></li>`;
+  };
+  $('#todoUnfin').innerHTML = unfin.length?unfin.map(x=>itemHTML(x,false)).join(''):'<div class="empty">暂无未完成待办，太棒了 🎉</div>';
+  $('#todoFin').innerHTML   = fin.length?fin.map(x=>itemHTML(x,true)).join(''):'<div class="empty">还没有已完成的任务</div>';
+}
+$('#todoAdd').addEventListener('click',()=>{
+  const content=$('#todoText').value.trim();
+  if(!content){ alert('请填写任务内容'); return; }
+  const todos=LS.get(K.todos,[]);
+  todos.push({id:uid(),content,due:$('#todoDue').value,pri:$('#todoPri').value,done:false,createdAt:Date.now()});
+  LS.set(K.todos,todos);
+  $('#todoText').value=''; $('#todoDue').value=''; $('#todoPri').value='normal';
+  renderTodos(); renderRemind();
+});
+$('#todoUnfin').addEventListener('click',onTodoAct);
+$('#todoFin').addEventListener('click',onTodoAct);
+function onTodoAct(e){
+  const btn=e.target.closest('[data-act]'); if(!btn) return;
+  const id=btn.dataset.id, act=btn.dataset.act;
+  let todos=LS.get(K.todos,[]);
+  if(act==='toggle'){ todos=todos.map(x=>x.id===id?{...x,done:!x.done}:x); editingId=null; }
+  else if(act==='del'){ if(confirm('确定删除该待办？')) todos=todos.filter(x=>x.id!==id); }
+  else if(act==='edit'){ editingId=id; }
+  else if(act==='cancel'){ editingId=null; }
+  else if(act==='save'){
+    const x=todos.find(t=>t.id===id);
+    if(x){ x.content=$('#eText').value.trim()||x.content; x.due=$('#eDue').value; x.pri=$('#ePri').value; }
+    editingId=null;
+  }
+  LS.set(K.todos,todos); renderTodos(); renderRemind();
+}
+
+/* ===================== 学校管理 ===================== */
+function renderSchools(){
+  const schools=LS.get(K.schools,[]);
+  $('#schoolList').innerHTML = schools.length
+    ? schools.map(s=>`<span class="chip">${esc(s.name)}<span class="x" data-del="${s.id}">×</span></span>`).join('')
+    : '<div class="empty">尚未添加学校，请手动新增或导入Excel</div>';
+}
+$('#schoolAdd').addEventListener('click',()=>{
+  const name=$('#schoolName').value.trim();
+  if(!name){ alert('请填写学校名称'); return; }
+  const schools=LS.get(K.schools,[]);
+  if(schools.some(s=>s.name===name)){ alert('该学校已存在'); return; }
+  schools.push({id:uid(),name});
+  LS.set(K.schools,schools);
+  $('#schoolName').value=''; renderSchools(); renderTaskSchools();
+});
+$('#schoolList').addEventListener('click',e=>{
+  const x=e.target.dataset.del; if(!x) return;
+  if(!confirm('删除学校？其相关任务进度将一并清除。')) return;
+  let schools=LS.get(K.schools,[]).filter(s=>s.id!==x);
+  LS.set(K.schools,schools);
+  let st=LS.get(K.stasks,[]).filter(t=>t.schoolId!==x);
+  LS.set(K.stasks,st);
+  renderSchools(); renderTaskSchools(); renderOverview();
+});
+$('#excelImport').addEventListener('click',()=>{
+  const f=$('#excelFile').files[0];
+  if(!f){ alert('请先选择Excel文件'); return; }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      if(typeof XLSX==='undefined'){ alert('Excel组件未加载（需联网），可改用手动添加'); return; }
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      const names=[];
+      rows.forEach(r=>{ if(r&&r.length){ const v=String(r[0]||'').trim(); if(v && !/学校|名称|name/i.test(v)) names.push(v); } });
+      addSchoolsBatch(names);
+    }catch(err){ alert('解析失败：'+err.message); }
+  };
+  reader.readAsArrayBuffer(f);
+});
+function addSchoolsBatch(names){
+  const schools=LS.get(K.schools,[]); let added=0,dup=0;
+  names.forEach(n=>{ if(schools.some(s=>s.name===n)) dup++; else { schools.push({id:uid(),name:n}); added++; } });
+  LS.set(K.schools,schools);
+  $('#excelTip').textContent=`已导入 ${added} 所，重复跳过 ${dup} 所`;
+  renderSchools(); renderTaskSchools();
+}
+
+/* ===================== 新建任务 ===================== */
+function renderTaskSchools(){
+  const schools=LS.get(K.schools,[]);
+  $('#taskSchools').innerHTML = schools.length
+    ? schools.map(s=>`<label class="pick" data-id="${s.id}"><input type="checkbox" data-sid="${s.id}">${esc(s.name)}</label>`).join('')
+    : '<div class="empty">请先在上方添加学校</div>';
+  updateSchoolBulkInfo();
+}
+function updateSchoolBulkInfo(){
+  const total = document.querySelectorAll('#taskSchools input').length;
+  const sel = document.querySelectorAll('#taskSchools input:checked').length;
+  $('#schoolBulkInfo').textContent = total ? `已选 ${sel} / ${total} 所` : '';
+}
+$('#taskSchools').addEventListener('change',e=>{
+  if(e.target.dataset.sid){ e.target.closest('.pick').classList.toggle('on',e.target.checked); updateSchoolBulkInfo(); }
+});
+document.querySelector('.school-bulk-act').addEventListener('click',e=>{
+  const act = e.target.dataset.schoolBulk; if(!act) return;
+  const picks = document.querySelectorAll('#taskSchools input');
+  picks.forEach(i => {
+    const lab = i.closest('.pick');
+    let next = i.checked;
+    if(act==='all')  next = true;
+    else if(act==='none') next = false;
+    else if(act==='inv') next = !i.checked;
+    if(i.checked !== next){ i.checked = next; lab.classList.toggle('on', next); }
+  });
+  updateSchoolBulkInfo();
+});
+$('#taskCreate').addEventListener('click',()=>{
+  const name=$('#taskName').value.trim();
+  if(!name){ alert('请填写任务名称'); return; }
+  const sids=[...document.querySelectorAll('#taskSchools input:checked')].map(i=>i.dataset.sid);
+  if(!sids.length){ alert('请至少选择一所下发学校'); return; }
+  const tasks=LS.get(K.tasks,[]);
+  const task={id:uid(),name,desc:$('#taskDesc').value.trim(),deadline:$('#taskDeadline').value,createdAt:Date.now()};
+  tasks.push(task); LS.set(K.tasks,tasks);
+  let st=LS.get(K.stasks,[]);
+  sids.forEach(sid=> st.push({id:task.id+'::'+sid,taskId:task.id,schoolId:sid,status:0,note:'',follow:''}));
+  LS.set(K.stasks,st);
+  $('#taskName').value=''; $('#taskDesc').value=''; $('#taskDeadline').value='';
+  document.querySelectorAll('#taskSchools input').forEach(i=>{i.checked=false;i.closest('.pick').classList.remove('on');});
+  updateSchoolBulkInfo();
+  $('#taskTip').textContent='任务已创建并下发';
+  setTimeout(()=>$('#taskTip').textContent='',2500);
+  renderOverview();
+});
+
+/* ===================== 任务总览（含按学校筛选） ===================== */
+function renderOverview(){
+  const tasks=LS.get(K.tasks,[]);
+  const schools=LS.get(K.schools,[]);
+  const st=LS.get(K.stasks,[]);
+  const sName=Object.fromEntries(schools.map(s=>[s.id,s.name]));
+  const ft=$('#filterTask').value;
+  const fs=$('#filterSchool').value;
+
+  // 筛选下拉
+  $('#filterTask').innerHTML='<option value="">全部任务</option>'+tasks.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  $('#filterTask').value=ft;
+  $('#filterSchool').innerHTML='<option value="">全部学校</option>'+schools.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  $('#filterSchool').value=fs;
+
+  // 状态统计（按当前筛选）
+  renderStat();
+
+  if(!tasks.length){ $('#overview').innerHTML='<div class="empty">暂无任务，请先在上方创建</div>'; return; }
+  const folded = new Set(LS.get(K.fold,[]));
+  const html=tasks.filter(t=>!ft||t.id===ft).map(t=>{
+    const all  = st.filter(x=>x.taskId===t.id);
+    const rows = all.filter(x=> (!fs||x.schoolId===fs) && (statMode==='done' ? x.status===1 : statMode!=='todo' || x.status!==1));
+    const doneN= all.filter(x=>x.status===1).length;
+    const rate = all.length ? Math.round(doneN/all.length*100) : 0;
+    const inner = rows.length ? `<div class="tbl-scroll"><table>
+      <thead><tr><th style="width:16%">学校</th><th style="width:168px">完成状态</th><th>督办备注</th><th>跟进记录</th></tr></thead>
+      <tbody>${rows.map(x=>`
+        <tr data-id="${x.id}" class="${ST_ROW[x.status===1?1:0]}">
+          <td data-label="学校">${esc(sName[x.schoolId]||'未知学校')}</td>
+          <td data-label="状态">
+            <div class="st-switch" data-id="${x.id}">
+              ${STATUS.map((s,i)=>`<button type="button" class="st-opt ${ST_ROW[i]}${x.status===i?' on':''}" data-st="${i}">${s}</button>`).join('')}
+            </div>
+          </td>
+          <td data-label="备注"><input type="text" data-f="note" value="${esc(x.note)}" placeholder="填写备注"></td>
+          <td data-label="跟进"><input type="text" data-f="follow" value="${esc(x.follow)}" placeholder="填写跟进"></td>
+        </tr>`).join('')}
+      </tbody></table></div>` : '<div class="empty" style="padding:18px">该条件下无可显示学校</div>';
+    return `<div class="task-block${folded.has(t.id)?' folded':''}" data-task="${t.id}">
+      <div class="tb-head">
+        <div class="th-left">
+          <div class="th-name"><span class="fold-ico">▼</span>${esc(t.name)}
+            <span class="pill s0">${t.deadline?('截止 '+t.deadline.replace('T',' ')):'无截止'}</span>
+          </div>
+          ${t.desc?`<div class="th-desc">${esc(t.desc)}</div>`:''}
+        </div>
+        <div class="th-act">
+          <div class="prog-bar" title="完成率 ${rate}%"><i style="width:${rate}%;background:${ST_COLOR[1]}"></i></div>
+          <span class="th-prog"><b style="color:${ST_COLOR[1]}">${doneN}</b> / ${all.length} 所 · ${rate}%</span>
+          <button type="button" class="sm danger th-del" data-del-task="${t.id}">删除任务</button>
+        </div>
+      </div>
+      <div class="tb-body">${inner}</div>
+    </div>`;
+  }).join('');
+  $('#overview').innerHTML=html;
+}
+/* 状态统计（可单独局部刷新，避免整表重绘导致输入框失焦） */
+function renderStat(){
+  const st=LS.get(K.stasks,[]);
+  const ft=$('#filterTask').value, fs=$('#filterSchool').value;
+  const cnt=new Array(STATUS.length).fill(0);
+  st.forEach(x=>{
+    if(ft&&x.taskId!==ft) return;
+    if(fs&&x.schoolId!==fs) return;
+    cnt[x.status===1?1:0]++;
+  });
+  const total=cnt[0]+cnt[1];
+  const rate=total?Math.round(cnt[1]/total*100):0;
+  $('#statBar').innerHTML =
+    STATUS.map((s,i)=>{
+      const m = i ? 'done' : 'todo';
+      return `<span class="s ${ST_ROW[i]} jump${statMode===m?' act':''}" data-jump="${m}" title="点击只看${s}的记录"><i class="dotc" style="background:${ST_COLOR[i]}"></i>${s} <b>${cnt[i]}</b></span>`;
+    }).join('')
+    + `<span class="s st-total">完成率 <b>${rate}%</b></span>`;
+}
+/* 折叠状态读写 */
+function setFold(id,on){ const s=new Set(LS.get(K.fold,[])); on?s.add(id):s.delete(id); LS.set(K.fold,[...s]); }
+
+$('#filterUnfin').addEventListener('change',e=>{
+  statMode = e.target.checked ? 'todo' : 'all';   // 复选框与统计块联动
+  renderOverview();
+});
+/* 点击统计块跳转：未完成→只看未完成，已完成→只看已完成，再点一次恢复全部 */
+$('#statBar').addEventListener('click',e=>{
+  const j=e.target.closest('[data-jump]'); if(!j) return;
+  const m=j.dataset.jump;
+  statMode = (statMode===m) ? 'all' : m;
+  $('#filterUnfin').checked = (statMode==='todo');
+  renderOverview();
+  $('#overview').scrollIntoView({behavior:'smooth',block:'start'});
+});
+$('#filterTask').addEventListener('change',renderOverview);
+$('#filterSchool').addEventListener('change',renderOverview);
+$('#btnFoldAll').addEventListener('click',()=>{
+  const blocks=[...document.querySelectorAll('#overview .task-block')];
+  blocks.forEach(b=>b.classList.add('folded'));
+  LS.set(K.fold, blocks.map(b=>b.dataset.task));
+});
+$('#btnUnfoldAll').addEventListener('click',()=>{
+  document.querySelectorAll('#overview .task-block').forEach(b=>b.classList.remove('folded'));
+  LS.set(K.fold,[]);
+});
+/* 刷新单个任务块的完成进度（局部，不重绘整表） */
+function updateBlockProgress(block){
+  if(!block) return;
+  const tid=block.dataset.task;
+  const all=LS.get(K.stasks,[]).filter(x=>x.taskId===tid);
+  const doneN=all.filter(x=>x.status===1).length;
+  const rate=all.length?Math.round(doneN/all.length*100):0;
+  const bar=block.querySelector('.prog-bar i');
+  if(bar){ bar.style.width=rate+'%'; bar.style.background=ST_COLOR[1]; }
+  const el=block.querySelector('.th-prog');
+  if(el) el.innerHTML=`<b style="color:${ST_COLOR[1]}">${doneN}</b> / ${all.length} 所 · ${rate}%`;
+}
+/* 折叠/展开 + 状态切换 + 删除任务 */
+$('#overview').addEventListener('click',e=>{
+  const stBtn=e.target.closest('.st-opt');
+  if(stBtn){
+    const wrap=stBtn.closest('.st-switch'); if(!wrap) return;
+    const v=Number(stBtn.dataset.st);
+    let st=LS.get(K.stasks,[]);
+    const x=st.find(s=>s.id===wrap.dataset.id); if(!x) return;
+    if(x.status===v) return;
+    x.status=v; LS.set(K.stasks,st);
+    wrap.querySelectorAll('.st-opt').forEach(b=>b.classList.toggle('on', Number(b.dataset.st)===v));
+    const tr=stBtn.closest('tr');
+    tr.classList.remove('st-todo','st-done'); tr.classList.add(ST_ROW[v]);
+    updateBlockProgress(tr.closest('.task-block'));
+    renderStat();
+    if(statMode!=='all') renderOverview();   // 处于状态筛选时，该行需移出/移入视图
+    return;
+  }
+  const delBtn=e.target.closest('[data-del-task]');
+  if(delBtn){
+    const tid=delBtn.dataset.delTask;
+    const t=LS.get(K.tasks,[]).find(x=>x.id===tid);
+    const n=LS.get(K.stasks,[]).filter(x=>x.taskId===tid).length;
+    if(!confirm(`确定删除任务「${t?t.name:'未知'}」？\n其下 ${n} 条学校进度记录将一并清除，且不可恢复。`)) return;
+    LS.set(K.tasks, LS.get(K.tasks,[]).filter(x=>x.id!==tid));
+    LS.set(K.stasks, LS.get(K.stasks,[]).filter(x=>x.taskId!==tid));
+    setFold(tid,false);
+    if($('#filterTask').value===tid) $('#filterTask').value='';
+    renderOverview(); backupInfo();
+    return;
+  }
+  const head=e.target.closest('.tb-head'); if(!head) return;
+  const block=head.closest('.task-block'); if(!block) return;
+  setFold(block.dataset.task, block.classList.toggle('folded'));
+});
+$('#overview').addEventListener('change',e=>{
+  const tr=e.target.closest('tr'); if(!tr) return;
+  const f=e.target.dataset.f; if(!f) return;
+  let st=LS.get(K.stasks,[]);
+  const x=st.find(s=>s.id===tr.dataset.id); if(!x) return;
+  x[f]=e.target.value;
+  LS.set(K.stasks,st);   // 备注/跟进仅保存，不重绘，避免输入框失焦
+});
+
+/* ===================== 数据备份 ===================== */
+function backupInfo(){
+  const c=k=>LS.get(k,[]).length;
+  $('#backupInfo').textContent=`当前本地数据：待办 ${c(K.todos)} 条 · 学校 ${c(K.schools)} 所 · 任务 ${c(K.tasks)} 个 · 学校任务进度 ${c(K.stasks)} 条`;
+}
+$('#btnExport').addEventListener('click',()=>{
+  const data={
+    _app:'乡镇教研员督办工作台', _version:1, exportedAt:new Date().toISOString(),
+    data:{ todos:LS.get(K.todos,[]), schools:LS.get(K.schools,[]), tasks:LS.get(K.tasks,[]),
+           stasks:LS.get(K.stasks,[]), fold:LS.get(K.fold,[]) }
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='教研督办备份_'+todayStr()+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$('#btnImportPick').addEventListener('click',()=>$('#importFile').click());
+$('#importFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const obj=JSON.parse(ev.target.result);
+      if(!obj.data) throw new Error('文件格式不正确');
+      if(!confirm('导入将覆盖当前所有本地数据，确定继续？')) return;
+      LS.set(K.todos,obj.data.todos||[]);
+      LS.set(K.schools,obj.data.schools||[]);
+      LS.set(K.tasks,obj.data.tasks||[]);
+      LS.set(K.stasks,obj.data.stasks||[]);
+      LS.set(K.fold,obj.data.fold||[]);
+      LS.set('yr_st_migrated',false); migrateStatus();   // 兼容旧版备份里的四级状态
+      renderTodos(); renderRemind(); renderSchools(); renderTaskSchools(); renderOverview(); backupInfo();
+      alert('数据已恢复');
+    }catch(err){ alert('导入失败：'+err.message); }
+  };
+  reader.readAsText(f);
+  e.target.value='';
+});
+
+/* ===================== 云端同步（内置服务 · 只需一个同步码） ===================== */
+const SYNC_KEY = 'yr_sync';
+const DEF_CFG  = { space:'', auto:true, lastSync:0, lastRemoteAt:'' };
+const getCfg  = () => Object.assign({}, DEF_CFG, LS.get(SYNC_KEY,{}));
+function saveCfg(patch){ const c=Object.assign(getCfg(),patch); LS.set(SYNC_KEY,c); return c; }
+const hasCfg  = () => !!getCfg().space;
+/* file:// 直接双击打开时没有同源服务端，同步不可用 */
+const IS_FILE = location.protocol === 'file:';
+const apiUrl  = () => 'api/sync?room=' + encodeURIComponent(getCfg().space);
+const ROOM_OK = /^[\u4e00-\u9fa5A-Za-z0-9_-]{2,40}$/;
+/* 打包本机全部数据 */
+function collectData(){
+  return { todos:LS.get(K.todos,[]), schools:LS.get(K.schools,[]), tasks:LS.get(K.tasks,[]),
+           stasks:LS.get(K.stasks,[]), fold:LS.get(K.fold,[]) };
+}
+/* 用云端数据覆盖本机并刷新界面 */
+function applyData(d){
+  if(!d) return;
+  SYNC_SILENT = true;
+  LS.set(K.todos, d.todos||[]);
+  LS.set(K.schools, d.schools||[]);
+  LS.set(K.tasks, d.tasks||[]);
+  LS.set(K.stasks, d.stasks||[]);
+  LS.set(K.fold, d.fold||[]);
+  SYNC_SILENT = false;
+  LS.set('yr_st_migrated', false); migrateStatus();       // 兼容旧版备份里的四级状态
+  renderTodos(); renderRemind(); renderSchools(); renderTaskSchools(); renderOverview(); backupInfo();
+}
+function fmtTime(ts){
+  if(!ts) return '';
+  const d=new Date(ts), n=new Date(), p=x=>String(x).padStart(2,'0');
+  const day = d.toDateString()===n.toDateString() ? '今天' : `${d.getMonth()+1}月${d.getDate()}日`;
+  return `${day} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+/* 状态：on 已同步 / err 异常 / busy 进行中 / off 未开启 */
+function setSyncUI(state, txt, ts){
+  const box=$('#syncState'), flag=$('#syncFlag');
+  box.className  = 'sync-status' + (state==='off' ? '' : ' '+state);
+  flag.className = 'sync-flag'   + (state==='off' ? '' : ' '+state);
+  $('#syncStateTxt').textContent = txt;
+  $('#syncStateTm').textContent  = ts ? '最后同步 '+fmtTime(ts) : '';
+  $('#syncFlagTxt').textContent  = state==='on'   ? '云端已同步'
+                                 : state==='busy' ? '同步中…'
+                                 : state==='err'  ? '同步异常'
+                                 : '未开启云同步';
+}
+function refreshSyncUI(){
+  if(IS_FILE){ setSyncUI('err','当前是本地文件打开方式，无法同步。请通过网址访问本页面'); return; }
+  if(!hasCfg()){ setSyncUI('off','未开启同步，数据仅保存在这台设备'); return; }
+  const c=getCfg();
+  setSyncUI('on','同步已开启 · 同步码「'+c.space+'」', c.lastSync);
+}
+/* 本地数据变更 → 延迟 2 秒自动上传（合并连续改动，避免频繁请求） */
+let syncTimer = null;
+function scheduleSync(){
+  const c=getCfg();
+  if(IS_FILE || !hasCfg() || c.auto===false) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>cloudPush(false), 2000);
+}
+/* 读取云端：返回 { data, at }，at 为云端更新时间戳（0 表示云端还没有数据） */
+async function cloudHead(){
+  const r = await fetch(apiUrl(), { cache:'no-store' });
+  let j;
+  try{ j = await r.json(); }catch(e){ throw new Error('服务无响应（HTTP '+r.status+'）'); }
+  if(!r.ok || j.ok===false) throw new Error(j.err || ('HTTP '+r.status));
+  return { data: j.data || null, at: j.updatedAt ? new Date(j.updatedAt).getTime() : 0, iso: j.updatedAt || '' };
+}
+/* 上传：force=true 跳过冲突检测，直接覆盖云端 */
+async function cloudPush(force){
+  if(IS_FILE){ setSyncUI('err','本地文件打开方式无法同步，请通过网址访问本页面'); return false; }
+  if(!hasCfg()){ setSyncUI('off','请先填写同步码并开启同步'); return false; }
+  setSyncUI('busy','正在上传…', getCfg().lastSync);
+  const c = getCfg();
+  try{
+    if(!force){
+      // 带上"我基于的云端版本"，服务端发现已被别的设备改过就拒绝，不擅自覆盖
+      if(c.lastRemoteAt){
+        const r = await fetch(apiUrl(),{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ data:collectData(), baseAt:c.lastRemoteAt })
+        });
+        const j = await r.json().catch(()=>({}));
+        if(r.status===409 || j.conflict){
+          setSyncUI('err','云端已被其他设备更新，请手动选择「上传」或「拉取」', c.lastSync);
+          return false;
+        }
+        if(!r.ok || j.ok===false) throw new Error(j.err || ('HTTP '+r.status));
+        return pushDone(j.updatedAt);
+      }
+      // 还没记过云端版本（首次上传）：先探测一次，避免盖掉别人已建好的数据
+      const h = await cloudHead();
+      if(h.at > 0){
+        setSyncUI('err','云端已有数据，请点「从云端拉取」后再上传', c.lastSync);
+        return false;
+      }
+    }
+    const r = await fetch(apiUrl(),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ data:collectData() })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(r.status===409 || j.conflict){
+      setSyncUI('err','云端已被其他设备更新，请手动选择「上传」或「拉取」', c.lastSync);
+      return false;
+    }
+    if(!r.ok || j.ok===false) throw new Error(j.err || ('HTTP '+r.status));
+    return pushDone(j.updatedAt);
+  }catch(e){
+    setSyncUI('err','上传失败：'+e.message+'（本机数据不受影响，稍后会自动重试）', getCfg().lastSync);
+    return false;
+  }
+}
+function pushDone(iso){
+  saveCfg({ lastSync:Date.now(), lastRemoteAt: iso || getCfg().lastRemoteAt });
+  pendingLocal = false;
+  setSyncUI('on','同步已开启 · 同步码「'+getCfg().space+'」', getCfg().lastSync);
+  return true;
+}
+/* 拉取：silent=true 时只在云端确实更新过才覆盖本机（用于自动轮询） */
+async function cloudPull(opt){
+  opt = opt || {};
+  if(IS_FILE){ setSyncUI('err','本地文件打开方式无法同步，请通过网址访问本页面'); return false; }
+  if(!hasCfg()){ setSyncUI('off','请先填写同步码并开启同步'); return false; }
+  setSyncUI('busy','正在读取云端…', getCfg().lastSync);
+  const c = getCfg();
+  try{
+    const h = await cloudHead();
+    if(!h.at){
+      // 云端还没有数据：把本机数据作为初始版本传上去
+      setSyncUI('busy','云端暂无数据，正在上传本机数据…', c.lastSync);
+      pendingLocal = true;
+      await cloudPush(true);
+      return true;
+    }
+    const remoteMoved = h.iso !== c.lastRemoteAt;      // 云端版本和本机记的不一样 = 有变动
+    if(opt.force || remoteMoved || !opt.silent){
+      if(remoteMoved && pendingLocal && !opt.force){
+        setSyncUI('err','两端都有改动，等待你选择', c.lastSync);
+        const useCloud = confirm('云端和这台设备都有新的改动：\n\n【确定】用云端数据覆盖本机\n【取消】保留本机数据、上传覆盖云端');
+        if(!useCloud){ await cloudPush(true); return true; }
+      }
+      if(JSON.stringify(h.data) !== JSON.stringify(collectData())) applyData(h.data);
+    }
+    saveCfg({ lastSync:Date.now(), lastRemoteAt: h.iso });
+    pendingLocal = false;
+    setSyncUI('on','同步已开启 · 同步码「'+getCfg().space+'」', getCfg().lastSync);
+    return true;
+  }catch(e){
+    setSyncUI('err','读取失败：'+e.message+'（可继续使用本机数据）', getCfg().lastSync);
+    return false;
+  }
+}
+
+/* ---------- 同步面板交互 ---------- */
+function loadCfgToForm(){
+  const c=getCfg();
+  $('#syncSpace').value = c.space || '';
+  $('#syncAuto').checked = c.auto !== false;
+}
+$('#btnSyncSave').addEventListener('click', async ()=>{
+  if(IS_FILE){ alert('现在是直接双击打开的文件，无法同步。\n\n请用浏览器打开工作台的网址（手机和电脑都打开同一个网址），再填同步码。'); return; }
+  const space = $('#syncSpace').value.trim();
+  if(!ROOM_OK.test(space)){
+    alert('同步码格式不对：\n\n· 长度 2~40 位\n· 只能用中文、字母、数字、- 或 _\n· 不能有空格和标点符号\n\n例如：wangzhuang-2026');
+    return;
+  }
+  saveCfg({space, auto:$('#syncAuto').checked});
+  setSyncUI('busy','正在连接云端…');
+  try{
+    const h = await cloudHead();
+    if(!h.at){
+      await cloudPush(true);
+      alert('同步已开启！\n\n同步码：'+space+'\n\n在另一台设备（手机或电脑）打开同一个网址，填入同样的同步码「'+space+'」，数据就会自动保持一致。');
+    }else{
+      const useCloud = confirm('同步码「'+space+'」下已有数据（最后更新 '+fmtTime(h.at)+'）。\n\n【确定】用云端数据覆盖这台设备\n【取消】用这台设备的数据覆盖云端');
+      if(useCloud){
+        await cloudPull({force:true});
+        alert('已用云端数据更新这台设备');
+      }else{
+        await cloudPush(true);
+        alert('已把这台设备的数据上传到云端');
+      }
+    }
+  }catch(e){ setSyncUI('err','连接失败：'+e.message); }
+});
+$('#btnSyncPush').addEventListener('click', async ()=>{
+  if(!hasCfg()){ alert('请先填写同步码，点「开启同步」'); return; }
+  if(!confirm('确定用这台设备的数据覆盖云端吗？\n\n另一台设备下次打开时会变成这份数据。')) return;
+  if(await cloudPush(true)) alert('已上传到云端');
+});
+$('#btnSyncPull').addEventListener('click', async ()=>{
+  if(!hasCfg()){ alert('请先填写同步码，点「开启同步」'); return; }
+  if(!confirm('确定用云端数据覆盖这台设备吗？\n\n本设备尚未上传的改动会被覆盖。')) return;
+  if(await cloudPull({force:true})) alert('已拉取云端最新数据');
+});
+$('#btnSyncClear').addEventListener('click', ()=>{
+  if(!confirm('关闭同步？\n\n本机数据仍会保留，只是不再与云端同步。')) return;
+  localStorage.removeItem(SYNC_KEY);
+  loadCfgToForm(); refreshSyncUI();
+});
+$('#syncAuto').addEventListener('change', e=>{
+  saveCfg({auto:e.target.checked});
+  if(e.target.checked && pendingLocal) scheduleSync();
+});
+/* ===================== 本地文件打开时：把数据一次性搬到云端 ===================== */
+/* 双击打开本地文件时浏览器不允许自动同步，这里提供"一次性上传"通道：
+   数据本来就在这个页面里，直接读出来传上去，不依赖任何外部条件 */
+const MOVE_HOST = 'https://683edfca844d46449e9a7efd176e6b07.app.workbuddy.link';
+const moveApi   = room => MOVE_HOST + '/api/sync?room=' + encodeURIComponent(room);
+let   moveLinkUrl = '';
+
+function moveMsg(state, html){
+  $('#moveMsg').innerHTML = html ? '<div class="mb-msg '+state+'">'+html+'</div>' : '';
+}
+function refreshMoveStat(){
+  const c = k => LS.get(k,[]).length;
+  const n = c(K.todos) + c(K.schools) + c(K.tasks) + c(K.stasks);
+  $('#moveStat').innerHTML = n
+    ? '当前这份文件里共有 <b>'+c(K.todos)+'</b> 条待办 · <b>'+c(K.schools)+'</b> 所学校 · <b>'+
+      c(K.tasks)+'</b> 个任务 · <b>'+c(K.stasks)+'</b> 条进度记录，将全部上传。'
+    : '这份文件里还没有数据，先在前面录入一些再来搬家。';
+  $('#btnMove').disabled = (n === 0);
+}
+
+$('#btnMove').addEventListener('click', async ()=>{
+  const room = $('#moveRoom').value.trim();
+  if(!ROOM_OK.test(room)){
+    moveMsg('err','同步码格式不对：<br>2~40 位，只能用中文、字母、数字、- 或 _，不能有空格和标点。<br>例如：wangzhuang-2026');
+    return;
+  }
+  const data = collectData();
+  const mine = data.todos.length + data.schools.length + data.tasks.length + data.stasks.length;
+  if(!mine){ moveMsg('err','这份文件里没有数据可上传。'); return; }
+
+  const btn = $('#btnMove');
+  btn.disabled = true; btn.textContent = '正在上传…';
+  moveMsg('info','正在连接云端…');
+  try{
+    const g  = await fetch(moveApi(room), { cache:'no-store' });
+    if(!g.ok) throw new Error('连接云端失败（HTTP '+g.status+'）');
+    const gj = await g.json();
+    if(gj && gj.data){
+      const rn = (gj.data.todos||[]).length + (gj.data.schools||[]).length +
+                 (gj.data.tasks||[]).length + (gj.data.stasks||[]).length;
+      if(!confirm('同步码「'+room+'」下已经有 '+rn+' 条数据了。\n\n'+
+                  '【确定】用这份文件的 '+mine+' 条数据覆盖云端\n'+
+                  '【取消】放弃上传，先去看看云端的数据')){
+        moveMsg('warn','已取消，云端数据没动。');
+        btn.textContent = '上传到云端'; btn.disabled = false; return;
+      }
+    }
+    const r = await fetch(moveApi(room), {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ data, baseAt: (gj && gj.updatedAt) ? gj.updatedAt : undefined })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(r.status === 409){
+      moveMsg('warn','云端刚被其他设备更新过，为防覆盖已中止。请稍等几秒重试。');
+      btn.textContent = '重试上传'; btn.disabled = false; return;
+    }
+    if(!r.ok || !j.ok) throw new Error((j && j.err) || ('HTTP '+r.status));
+
+    moveLinkUrl = MOVE_HOST + '/?room=' + encodeURIComponent(room);
+    $('#moveLink').href = moveLinkUrl;
+    $('#moveDone').style.display = 'block';
+    moveMsg('ok','上传成功！<b>'+mine+'</b> 条数据已存到云端，同步码 <b>'+esc(room)+'</b>。<br>'+
+            '下面这条链接已经带好同步码，手机点开即可自动接上。');
+    btn.textContent = '已上传';
+    try{ localStorage.setItem('yr_last_room', room); }catch(e){}
+    $('#moveDone').scrollIntoView({ behavior:'smooth', block:'center' });
+  }catch(e){
+    moveMsg('err','上传失败：'+esc(e.message)+'<br>请检查网络后重试，这份文件里的数据不受影响。');
+    btn.textContent = '重试上传'; btn.disabled = false;
+  }
+});
+
+$('#btnMoveCopy').addEventListener('click', ()=>{
+  const txt = moveLinkUrl;
+  if(!txt){ alert('请先上传成功，再复制链接'); return; }
+  const done = ()=>{
+    const b=$('#btnMoveCopy'); b.textContent='已复制 ✓';
+    setTimeout(()=>{ b.textContent='复制链接发给手机'; }, 2000);
+  };
+  const fallback = ()=>{
+    try{
+      const ta=document.createElement('textarea'); ta.value=txt;
+      ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      const okc=document.execCommand('copy'); ta.remove();
+      okc ? done() : alert('复制失败，请手动复制这条链接：\n\n'+txt);
+    }catch(e){ alert('复制失败，请手动复制这条链接：\n\n'+txt); }
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(fallback);
+  }else fallback();
+});
+
+/* 本地文件打开时：显示搬家区块，隐藏那些用不了的常规同步控件 */
+if(IS_FILE){
+  $('#moveBox').style.display = 'block';
+  refreshMoveStat();
+  document.querySelectorAll('.sync-easy, .sync-grid, .sync-btn-row').forEach(el=>{ el.style.display='none'; });
+  try{
+    const last = localStorage.getItem('yr_last_room');
+    if(last) $('#moveRoom').value = last;
+  }catch(e){}
+}
+
+/* 网址直接带同步码：https://网址/?room=wangzhuang-2026
+   手机点开这种链接即可自动接上，不用手打同步码 */
+(function autoRoomFromUrl(){
+  if(IS_FILE) return;
+  const m = location.search.match(/[?&]room=([^&#]+)/);
+  if(!m) return;
+  let room='';
+  try{ room = decodeURIComponent(m[1]); }catch(e){ room = m[1]; }
+  room = String(room).trim();
+  if(!ROOM_OK.test(room)) return;
+  const c = getCfg();
+  if(c.space === room && c.lastSync) return;   // 同一个码且已同步过，不打扰
+  saveCfg({space:room});
+  loadCfgToForm();
+  setSyncUI('busy','正在接入云端…');
+  (async ()=>{
+    try{
+      const h = await cloudHead();
+      if(h.at) await cloudPull({force:true});   // 云端有数据 → 拉下来
+      else     await cloudPush(true);           // 云端为空 → 把本机传上去
+    }catch(e){ setSyncUI('err','接入失败：'+e.message); }
+  })();
+})();
+/* 点顶部同步标记 → 直接跳到同步设置 */
+$('#syncFlag').addEventListener('click', ()=>{
+  document.querySelector('.nav-item[data-view="backup"]').click();
+});
+
+/* ===================== 初始化 ===================== */
+/* 旧版四级状态（0未开始/1进行中/2已上报/3已完成）→ 新版两级：仅原"已完成"记为已完成，其余记为未完成 */
+function migrateStatus(){
+  if(LS.get('yr_st_migrated',false)) return;
+  const st=LS.get(K.stasks,[]);
+  // 仅当出现 2(已上报)/3(已完成) 时才判定为旧版数据，避免误伤新版 0/1
+  if(st.some(x=>Number(x.status)>1)){
+    st.forEach(x=>{ x.status = Number(x.status)===3 ? 1 : 0; });
+    LS.set(K.stasks,st);
+  }
+  LS.set('yr_st_migrated',true);
+}
+migrateStatus();
+renderTodos(); renderRemind(); renderSchools(); renderTaskSchools(); renderOverview(); backupInfo();
+
+/* ===================== 云端同步启动 ===================== */
+loadCfgToForm(); refreshSyncUI();
+if(hasCfg() && getCfg().auto !== false){
+  setTimeout(()=>cloudPull({silent:true}), 1200);                    // 打开页面先静默对齐
+  setInterval(()=>{ if(!document.hidden) cloudPull({silent:true}); }, 5*60*1000);   // 每 5 分钟轮询
+  document.addEventListener('visibilitychange', ()=>{               // 切回页面立即检查
+    if(!document.hidden) cloudPull({silent:true});
+  });
+  window.addEventListener('online', ()=>cloudPull({silent:true}));  // 断网恢复后补同步
+}
+
+/* 每分钟刷新一次倒计时/逾期状态（编辑中不打断） */
+let lastMin = -1;
+setInterval(()=>{
+  const m = new Date().getMinutes();
+  if(m!==lastMin && !editingId){ lastMin=m; renderTodos(); renderRemind(); }
+},1000);
+</script>
+</body>
+</html>
