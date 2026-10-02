@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云启 · 发布 HTML 为公网链接</title>
+<style>
+  /* ===== 双主题变量 ===== */
+  :root, [data-theme="light"] {
+    --bg:#f3f5fb; --card:#ffffff; --topbar:#ffffff;
+    --text:#1f2d3d; --text2:#5b6675; --muted:#98a2b3;
+    --border:#e7ebf2; --code-bg:#f7f9fc;
+    --primary:#3b82f6; --primary-grad:linear-gradient(135deg,#4f8df9,#3b6ef5); --primary-shadow:rgba(59,130,246,.35);
+    --ghost-bg:#eef1f6; --ghost-text:#3c4a5a;
+    --warn-bg:#ffecec; --warn-border:#e03131; --warn-text:#b02020;
+    --note-bg:#eef6ff; --note-border:#4c6ef5; --note-text:#33476b;
+    --shadow:0 6px 24px rgba(31,45,90,.08);
+    --ok:#2f9e44; --ok-bg:#e6f7ec;
+    --wait-bg:#eef1f6;
+  }
+  [data-theme="dark"] {
+    --bg:#0d1320; --card:#1a2233; --topbar:#141b2b;
+    --text:#e8edf5; --text2:#9aa7ba; --muted:#6b7890;
+    --border:#28324a; --code-bg:#131c2e;
+    --primary:#4c8dff; --primary-grad:linear-gradient(135deg,#5a9aff,#3b6ef5); --primary-shadow:rgba(76,141,255,.35);
+    --ghost-bg:#243049; --ghost-text:#c5cfe0;
+    --warn-bg:#3a2025; --warn-border:#e05555; --warn-text:#ff9a9a;
+    --note-bg:#1c2740; --note-border:#4c6ef5; --note-text:#c5d4f0;
+    --shadow:0 6px 24px rgba(0,0,0,.45);
+    --ok:#37b24d; --ok-bg:#1d3a26;
+    --wait-bg:#243049;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; transition:background .25s,color .25s; }
+
+  /* 顶部栏 */
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 22px; background:var(--topbar); box-shadow:0 1px 6px rgba(0,0,0,.07); transition:background .25s; }
+  .brand { font-size:19px; font-weight:700; color:var(--text); }
+  .brand small { color:var(--text2); font-weight:400; margin-left:6px; font-size:13px; }
+  .topbtns { display:flex; gap:8px; align-items:center; }
+  .tb-btn { background:var(--ghost-bg); border:none; border-radius:9px; padding:8px 15px; font-size:13px; color:var(--ghost-text); cursor:pointer; transition:.15s; }
+  .tb-btn:hover { filter:brightness(1.08); transform:translateY(-1px); }
+  #themeBtn { width:38px; height:38px; padding:0; border-radius:50%; font-size:17px; display:flex; align-items:center; justify-content:center; }
+
+  /* 主体 */
+  .main { flex:1; display:flex; gap:16px; padding:16px 22px; min-height:0; }
+  .panel { background:var(--card); border-radius:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; transition:background .25s; }
+  .content-panel { flex:1; min-width:0; }
+  .content-head { display:flex; align-items:center; gap:8px; padding:12px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .tab { background:var(--ghost-bg); border:none; border-radius:8px; padding:7px 14px; font-size:13px; cursor:pointer; color:var(--ghost-text); transition:.15s; }
+  .tab.active { background:var(--primary); color:#fff; box-shadow:0 3px 10px var(--primary-shadow); }
+  .spacer { flex:1; }
+  .icon-btn { background:none; border:none; color:#e03131; font-size:13px; cursor:pointer; }
+  .icon-btn:hover { text-decoration:underline; }
+  textarea { width:100%; flex:1; border:none; outline:none; resize:none; padding:14px 16px; font-family:Consolas,Monaco,monospace; font-size:13px; color:var(--text); background:var(--code-bg); transition:background .25s; }
+  .genbtn-wrap { padding:12px 16px; border-top:1px solid var(--border); }
+  .genbtn { width:100%; background:var(--primary-grad); color:#fff; border:none; border-radius:10px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px var(--primary-shadow); transition:.18s; }
+  .genbtn:hover { transform:translateY(-2px); box-shadow:0 10px 26px var(--primary-shadow); }
+  .genbtn:disabled { background:var(--ghost-bg); color:var(--muted); box-shadow:none; transform:none; cursor:not-allowed; }
+  .filehint { padding:8px 16px; font-size:12px; color:var(--muted); }
+
+  /* 预览 */
+  .preview-panel { flex:1; min-width:0; }
+  .preview-head { display:flex; align-items:center; padding:12px 16px; border-bottom:1px solid var(--border); font-weight:700; font-size:14px; color:var(--text); }
+  .preview-head .dot { width:8px; height:8px; border-radius:50%; margin-right:8px; background:var(--muted); transition:.2s; }
+  .preview-head .dot.ok { background:var(--ok); box-shadow:0 0 8px var(--ok); }
+  .preview-box { flex:1; position:relative; background:#fff; border-radius:0 0 14px 14px; }
+  .preview-box iframe { width:100%; height:100%; border:none; }
+  .preview-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px; text-align:center; line-height:2; }
+
+  /* 分享中心 */
+  .share { background:var(--card); border-top:1px solid var(--border); padding:14px 22px; transition:background .25s; }
+  .share-title { font-size:15px; font-weight:700; color:var(--text); margin-bottom:4px; }
+  .share-sub { font-size:12px; color:var(--muted); margin-bottom:12px; }
+  .share-cards { display:flex; gap:16px; }
+  .scard { flex:1; border:1px solid var(--border); border-radius:12px; padding:14px 16px; background:var(--code-bg); transition:background .25s; }
+  .scard h4 { font-size:14px; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between; color:var(--text); }
+  .scard .state { font-size:12px; padding:2px 9px; border-radius:20px; font-weight:600; }
+  .state.run, .state.ok { background:var(--ok-bg); color:var(--ok); }
+  .state.wait { background:var(--wait-bg); color:var(--muted); }
+  .scard p { font-size:12.5px; color:var(--text2); margin:6px 0 10px; line-height:1.6; }
+  .scard .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .sbtn { background:var(--primary-grad); color:#fff; border:none; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer; box-shadow:0 4px 12px var(--primary-shadow); transition:.15s; }
+  .sbtn:hover { transform:translateY(-1px); box-shadow:0 7px 18px var(--primary-shadow); }
+  .sbtn.ghost { background:var(--ghost-bg); color:var(--ghost-text); box-shadow:none; }
+  .count { font-size:12px; color:var(--muted); }
+
+  /* 弹窗 */
+  .modal-mask { position:fixed; inset:0; background:rgba(10,16,30,.45); display:none; align-items:center; justify-content:center; z-index:100; backdrop-filter:blur(2px); }
+  .modal-mask.show { display:flex; }
+  .modal { background:var(--card); color:var(--text); border-radius:16px; width:440px; max-width:92vw; padding:22px 24px; box-shadow:0 24px 70px rgba(0,0,0,.35); }
+  .modal h3 { font-size:17px; margin-bottom:6px; color:var(--text); }
+  .modal .close { float:right; cursor:pointer; color:var(--muted); font-size:20px; line-height:1; }
+  .modal label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; color:var(--text); }
+  .modal input { width:100%; padding:9px 11px; border:1px solid var(--border); border-radius:8px; font-size:14px; background:var(--code-bg); color:var(--text); }
+  .modal input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-shadow); }
+  .modal .remember { display:flex; align-items:center; gap:6px; font-weight:400; margin:10px 0; font-size:13px; color:var(--text2); }
+  .modal .foot { display:flex; gap:10px; margin-top:14px; }
+  .modal .foot button { flex:1; padding:11px; border:none; border-radius:9px; cursor:pointer; font-size:14px; font-weight:600; transition:.15s; }
+  .modal .save { background:var(--primary-grad); color:#fff; box-shadow:0 4px 14px var(--primary-shadow); }
+  .modal .save:hover { transform:translateY(-1px); }
+  .modal .cancel { background:var(--ghost-bg); color:var(--ghost-text); }
+  .modal .warn { background:var(--warn-bg); border-left:4px solid var(--warn-border); padding:8px 12px; border-radius:6px; font-size:12.5px; color:var(--warn-text); margin-top:8px; }
+  #status { font-size:13px; margin-top:8px; }
+  .ok { color:var(--ok); font-weight:700; }
+  .err { color:#e05555; }
+  .result-box { margin-top:10px; }
+  .result-box .url { background:var(--note-bg); border:1px solid var(--note-border); border-radius:8px; padding:10px; font-size:13px; word-break:break-all; color:var(--primary); }
+  .result-box .qr { text-align:center; margin-top:10px; }
+  .result-box .qr img { width:140px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+  /* 历史记录 */
+  .history .h-title { font-size:12.5px; font-weight:700; color:var(--text); margin-bottom:8px; }
+  .hitem { display:flex; align-items:center; gap:8px; padding:7px 9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; font-size:12px; background:var(--code-bg); }
+  .hitem .htime { color:var(--muted); font-size:11px; white-space:nowrap; }
+  .hitem .hname { flex:1; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hitem a { color:var(--primary); text-decoration:none; font-size:11px; }
+  .hitem a:hover { text-decoration:underline; }
+  .hcopy { background:var(--ghost-bg); border:none; color:var(--ghost-text); border-radius:6px; padding:3px 9px; cursor:pointer; font-size:11px; }
+  .hcopy:hover { filter:brightness(1.1); }
+</style>
+</head>
+<body>
+
+  <!-- 顶部栏 -->
+  <div class="topbar">
+    <div class="brand">🚀 云启 <small>发布 HTML 为公网链接</small></div>
+    <div class="topbtns">
+      <button class="tb-btn" id="btnSettings">设置</button>
+      <button class="tb-btn" id="btnContact">配置教程</button>
+      <button class="tb-btn" id="btnLicense">许可协议</button>
+      <button class="tb-btn" id="themeBtn" title="切换深浅色主题">🌙</button>
+    </div>
+  </div>
+
+  <!-- 主体：左内容 / 右预览 -->
+  <div class="main">
+    <div class="panel content-panel">
+      <div class="content-head">
+        <button class="tab active" data-mode="paste" id="tabPaste">内容</button>
+        <button class="tab" data-mode="upload" id="tabUpload">上传.html</button>
+        <button class="tab" data-mode="zip" id="tabZip">上传压缩包</button>
+        <span class="spacer"></span>
+        <button class="icon-btn" id="btnClear">清空</button>
+      </div>
+      <textarea id="code" placeholder="在此粘贴 HTML，或点击右上「上传.html」；也可以「上传压缩包」载入整个站点目录。&#10;&#10;粘贴后右侧会实时预览，点下方「生成链接」即可发布。"></textarea>
+      <div class="filehint" id="fileHint"></div>
+      <input type="file" id="fileInput" accept=".html,.htm" style="display:none;">
+      <input type="file" id="zipInput" accept=".zip" style="display:none;">
+      <div class="genbtn-wrap">
+        <button class="genbtn" id="genBtn">生成链接</button>
+        <div id="status"></div>
+      </div>
+    </div>
+
+    <div class="panel preview-panel">
+      <div class="preview-head"><span class="dot" id="previewDot"></span>实时预览</div>
+      <div class="preview-box">
+        <div class="preview-empty" id="previewEmpty">尚未生成内容<br>在左侧粘贴 HTML 或上传文件后<br>这里会实时显示效果</div>
+        <iframe id="previewFrame" style="display:none;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分享中心 -->
+  <div class="share">
+    <div class="share-cards">
+      <div class="scard">
+        <h4>我的发布 <span class="state wait" id="histState">暂无记录</span></h4>
+        <p>最近发布的页面在这：点「打开」访问，点「复制」取链接（保留最近 20 条）。</p>
+        <div id="historyList"></div>
+        <button class="sbtn ghost" id="clearHistoryBtn" style="margin-top:4px;font-size:12px;padding:4px 10px;">清空记录</button>
+      </div>
+      <div class="scard">
+        <h4>公网发布 <span class="state" id="pubState">待生成</span></h4>
+        <p>发布一个只含你 HTML 的独立页面，任何人可访问，全球 CDN 加速。</p>
+        <div class="row">
+          <button class="sbtn" id="publishBtn">一键发布</button>
+          <span class="count" id="pubCount">累计发布 0 次</span>
+        </div>
+        <div class="result-box" id="resultBox" style="display:none;">
+          <div class="url" id="resultUrl"></div>
+          <div class="qr" id="qrbox"></div>
+          <div class="row" style="margin-top:8px;">
+            <button class="sbtn" id="copyUrlBtn" style="flex:1;">📋 复制链接</button>
+          </div>
+        </div>
+        <div id="pubStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div class="modal-mask" id="modalSettings">
+    <div class="modal">
+      <h3>GitHub 配置 <span class="close" id="closeSettings">✕</span></h3>
+      <label>GitHub 用户名</label><input type="text" id="cfgUser" placeholder="例如 zhang_san">
+      <label>仓库名（需 Public）</label><input type="text" id="cfgRepo" placeholder="例如 my-pages">
+      <label>访问令牌 Token（ghp_ 开头）</label><input type="password" id="cfgToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+      <div class="remember"><input type="checkbox" id="cfgRemember" style="width:16px;height:16px;"> 记住配置（下次不用再填）</div>
+      <div class="warn">仓库必须是 Public；发布前请在仓库开启 GitHub Pages（Settings → Pages → Deploy from a branch → main）。不会配置请点右上角「配置教程」里的向导。</div>
+      <div class="foot"><button class="save" id="saveCfg">保存</button><button class="cancel" id="cancelCfg">取消</button></div>
+    </div>
+  </div>
+
+  <!-- 配置教程弹窗 -->
+  <div class="modal-mask" id="modalContact">
+    <div class="modal" style="width:560px;max-height:86vh;overflow:auto;">
+      <h3>第一次用？一步一步配置 GitHub <span class="close" id="closeContact">✕</span></h3>
+      <ol style="margin:12px 0 0 20px;font-size:13px;line-height:1.9;color:var(--text2);">
+        <li><b>注册 GitHub</b>：打开 github.com → 右上角 Sign up，填邮箱/密码/用户名，验证后完成。</li>
+        <li><b>建公开仓库</b>：+ → New repository，填英文名，可见性选 <b>Public</b>，Create repository。</li>
+        <li><b>生成 Token</b>：头像 → Settings → 左侧最底部 Developer settings → Personal access tokens → Tokens (classic) → Generate new token (classic)；Note 随便填，Expiration 选 No expiration，勾选 <b>repo</b>，Generate token，复制 <b>ghp_</b> 开头字符串（只显示一次）。</li>
+        <li><b>开 GitHub Pages</b>：仓库 Settings → Pages → Deploy from a branch → 选 main → Save。</li>
+        <li><b>回来填好发布</b>：点右上「设置」填 用户名/仓库名/Token，粘贴或上传 HTML，点「生成链接」→「一键发布」，等 1~2 分钟用返回的链接打开。</li>
+      </ol>
+      <div style="margin-top:12px;padding:10px 12px;background:var(--note-bg);border:1px solid var(--note-border);border-radius:8px;font-size:12.5px;color:var(--note-text);line-height:1.8;">
+        <b>常见问题：</b><br>
+        · 上传失败/403：Token 没勾 repo，或仓库是 Private。<br>
+        · 打开是代码/404：确认开了 Pages，并等 1~2 分钟部署。<br>
+        · 想更新：改好再发布一次，链接不变。<br>
+        · 想删除：登录 GitHub 进仓库删文件。<br>
+        · 文件名尽量用英文更稳。
+      </div>
+    </div>
+  </div>
+
+  <!-- 许可协议弹窗 -->
+  <div class="modal-mask" id="modalLicense">
+    <div class="modal">
+      <h3>许可协议 <span class="close" id="closeLicense">✕</span></h3>
+      <p style="font-size:13px;color:var(--text2);line-height:1.9;margin-top:10px;">
+        本工具为本地单文件网页应用，仅调用 GitHub 官方接口完成 HTML 上传与发布，可自由使用与修改。<br><br>
+        发布内容存于你的公开 GitHub 仓库，请勿放入身份证、密码等隐私文件。<br><br>
+        生成 Token 属于你的账号凭据，请勿泄露。
+      </p>
+      <div class="foot"><button class="cancel" id="closeLicense2">知道了</button></div>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+
+  // ===== 主题切换 =====
+  function applyTheme(t){
+    document.documentElement.setAttribute("data-theme", t);
+    $("themeBtn").textContent = (t==="dark") ? "☀️" : "🌙";
+    localStorage.setItem("lfb_theme", t);
+  }
+  $("themeBtn").onclick = function(){
+    var cur = document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark";
+    applyTheme(cur);
+  };
+  applyTheme(localStorage.getItem("lfb_theme") || "light");
+
+  var pastedName = null, fileObj = null, zipFiles = null;
+
+  // ===== 配置 =====
+  function loadCfg(){
+    try{var c=JSON.parse(localStorage.getItem("lfb_cfg")||"{}");
+      if(c.user)$("cfgUser").value=c.user; if(c.repo)$("cfgRepo").value=c.repo;
+      if(c.token){$("cfgToken").value=c.token;$("cfgRemember").checked=true;}
+    }catch(e){}
+  }
+  function saveCfg(){
+    if($("cfgRemember").checked){
+      localStorage.setItem("lfb_cfg",JSON.stringify({user:$("cfgUser").value.trim(),repo:$("cfgRepo").value.trim(),token:$("cfgToken").value.trim()}));
+    } else { localStorage.removeItem("lfb_cfg"); }
+  }
+  loadCfg();
+
+  // ===== 弹窗 =====
+  function show(id){ $(id).classList.add("show"); }
+  function hide(id){ $(id).classList.remove("show"); }
+  $("btnSettings").onclick=function(){show("modalSettings");};
+  $("closeSettings").onclick=function(){hide("modalSettings");};
+  $("cancelCfg").onclick=function(){hide("modalSettings");};
+  $("saveCfg").onclick=function(){saveCfg();hide("modalSettings");};
+  $("btnContact").onclick=function(){show("modalContact");};
+  $("closeContact").onclick=function(){hide("modalContact");};
+  $("btnLicense").onclick=function(){show("modalLicense");};
+  $("closeLicense").onclick=function(){hide("modalLicense");};
+  $("closeLicense2").onclick=function(){hide("modalLicense");};
+  document.querySelectorAll(".modal-mask").forEach(function(m){m.onclick=function(e){if(e.target===m)m.classList.remove("show");};});
+
+  // ===== 标签 / 上传 =====
+  $("tabPaste").onclick=function(){setMode("paste");};
+  $("tabUpload").onclick=function(){setMode("upload");};
+  $("tabZip").onclick=function(){setMode("zip");};
+  function setMode(m){
+    document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});
+    if(m==="paste")$("tabPaste").classList.add("active");
+    else if(m==="upload"){$("tabUpload").classList.add("active");$("fileInput").click();}
+    else {$("tabZip").classList.add("active");$("zipInput").click();}
+  }
+  $("fileInput").onchange=function(){
+    var f=this.files[0]; if(!f)return;
+    var r=new FileReader();
+    r.onload=function(){
+      $("code").value=r.result;
+      fileObj=f; pastedName=f.name; zipFiles=null;
+      preview($("code").value); updateStates();
+    };
+    r.readAsText(f); this.value="";
+  };
+  $("zipInput").onchange=function(){
+    var f=this.files[0]; if(!f)return;
+    $("status").innerHTML='<span class="ok">⏳ 正在解压压缩包…</span>';
+    JSZip.loadAsync(f).then(function(zip){
+      var out={}, name=null, proms=[];
+      zip.forEach(function(rel,entry){
+        if(entry.dir)return;
+        proms.push(entry.async("base64").then(function(b64){ out[rel]=b64; if(rel.toLowerCase()==="index.html")name=rel; }));
+      });
+      Promise.all(proms).then(function(){
+        if(!name){ name=Object.keys(out)[0]; }
+        zipFiles=out; fileObj=null; pastedName=null;
+        try{ $("code").value=atob(zipFiles[name]); }catch(e){ $("code").value="[压缩包入口："+name+"]"; }
+        preview($("code").value); updateStates();
+        $("status").innerHTML='<span class="ok">✅ 压缩包已载入 '+Object.keys(out).length+' 个文件，入口 '+name+'</span>';
+      });
+    }).catch(function(e){ $("status").innerHTML='<span class="err">❌ 解压失败：'+e+'</span>'; });
+    this.value="";
+  };
+
+  // ===== 预览 =====
+  function preview(html){
+    if(!html || !html.trim()){ return; }
+    $("previewEmpty").style.display="none";
+    $("previewFrame").style.display="block";
+    try{ $("previewFrame").srcdoc=html; }catch(e){}
+    $("previewDot").classList.add("ok");
+  }
+  $("code").addEventListener("input",function(){
+    if(!zipFiles){ fileObj=null; pastedName=null; }
+    preview($("code").value);
+  });
+
+  // ===== 状态 =====
+  function updateStates(){
+    var has = $("code").value.trim()!="";
+    $("pubState").className="state "+(has?"ok":"wait");
+    $("pubState").textContent=has?"已就绪":"待生成";
+    $("genBtn").disabled=!has;
+  }
+  updateStates();
+
+  // ===== 清空 =====
+  $("btnClear").onclick=function(){
+    $("code").value=""; fileObj=null; zipFiles=null; pastedName=null;
+    $("previewFrame").style.display="none"; $("previewFrame").srcdoc="";
+    $("previewEmpty").style.display="flex"; $("previewDot").classList.remove("ok");
+    updateStates();
+  };
+
+  // ===== 生成链接 =====
+  $("genBtn").onclick=function(){
+    var cfg=readCfg();
+    if(!cfg.user||!cfg.repo||!cfg.token){
+      $("status").innerHTML='<span class="err">请先点右上「设置」，填好 GitHub 用户名/仓库名/Token（不会填点右上「配置教程」看向导）。</span>';
+      show("modalSettings"); return;
+    }
+    if(!zipFiles){ pastedName = pastedName || "index.html"; }
+    $("status").innerHTML='<span class="ok">✅ 内容已就绪，可在下方「公网发布」点「一键发布」。</span>';
+  };
+
+  function readCfg(){ return {user:$("cfgUser").value.trim(),repo:$("cfgRepo").value.trim(),token:$("cfgToken").value.trim()}; }
+
+  // ===== 公网发布 =====
+  $("publishBtn").onclick=async function(){
+    var cfg=readCfg();
+    if(!cfg.user||!cfg.repo||!cfg.token){ $("pubStatus").innerHTML='<span class="err">先点右上「设置」填好 GitHub 配置。</span>'; show("modalSettings"); return; }
+    if(!$("code").value.trim()){ $("pubStatus").innerHTML='<span class="err">请先在左侧粘贴 HTML 或上传文件。</span>'; return; }
+    saveCfg(); $("publishBtn").disabled=true;
+    $("pubStatus").innerHTML='<span class="ok">⏳ 正在上传…</span>';
+    try{
+      var br="main";
+      var r0=await gh("GET","https://api.github.com/repos/"+cfg.user+"/"+cfg.repo,cfg.token,null);
+      if(r0.ok){ br=(await r0.json()).default_branch||"main"; }
+      else{ var t0=await r0.text(); throw new Error("仓库访问失败(HTTP "+r0.status+")，检查用户名/仓库名/Token。:"+t0.slice(0,100)); }
+      var files=[];
+      if(zipFiles){ for(var k in zipFiles){ files.push({path:k,b64:zipFiles[k]}); } }
+      else {
+        var name=pastedName||"index.html";
+        var b64=btoa(unescape(encodeURIComponent($("code").value)));
+        files.push({path:name,b64:b64});
+      }
+      for(var i=0;i<files.length;i++){
+        $("pubStatus").innerHTML='<span class="ok">⏳ 上传 ('+(i+1)+'/'+files.length+') '+files[i].path+'</span>';
+        var body={message:"Publish "+files[i].path,content:files[i].b64,branch:br};
+        var r=await gh("PUT","https://api.github.com/repos/"+cfg.user+"/"+cfg.repo+"/contents/"+encodeURIComponent(files[i].path),cfg.token,body);
+        if(!r.ok){ var tt=await r.text(); throw new Error("上传 "+files[i].path+" 失败(HTTP "+r.status+")。Token需勾repo、仓库须Public。:"+tt.slice(0,100)); }
+      }
+      var entryPath=files[0].path;
+      for(var j=0;j<files.length;j++){ if(files[j].path.toLowerCase()==="index.html"){entryPath=files[j].path;break;} }
+      var url="https://"+cfg.user+".github.io/"+cfg.repo+"/"+encodeURIComponent(entryPath);
+      var n=(parseInt(localStorage.getItem("lfb_pubcount")||"0",10)+1);
+      localStorage.setItem("lfb_pubcount",n);
+      $("pubCount").textContent="累计发布 "+n+" 次";
+      pushHistory({name:entryPath, url:url});
+      renderHistory();
+      $("resultBox").style.display="block";
+      $("resultUrl").textContent=url;
+      $("pubStatus").innerHTML='<span class="ok">✅ 发布成功！请确认仓库已开 GitHub Pages，等 1~2 分钟打开。</span>';
+      $("qrbox").innerHTML="";
+      try{ QRCode.toDataURL(url,{width:140,margin:1},function(e,u){ if(!e&&u){$("qrbox").innerHTML="<div style='font-size:12px;color:var(--muted)'>手机扫码也能打开：</div><img src='"+u+"'>";} }); }catch(e2){}
+      $("copyUrlBtn").onclick=function(){
+        var ta=document.createElement("textarea"); ta.value=url; document.body.appendChild(ta); ta.select();
+        try{document.execCommand("copy");}catch(e3){}
+        document.body.removeChild(ta); this.textContent="✅ 已复制"; var b=this; setTimeout(function(){b.textContent="📋 复制链接";},1500);
+      };
+    }catch(err){
+      $("pubStatus").innerHTML='<span class="err">❌ '+err.message+'</span>';
+    }finally{
+      $("publishBtn").disabled=false;
+    }
+  };
+
+  // ===== 发布历史 =====
+  function loadHistory(){ try{ return JSON.parse(localStorage.getItem("lfb_history")||"[]"); }catch(e){ return []; } }
+  function pushHistory(rec){
+    var h=loadHistory();
+    rec.time=new Date().toLocaleString("zh-CN",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+    h.unshift(rec);
+    localStorage.setItem("lfb_history", JSON.stringify(h.slice(0,20)));
+  }
+  function copyText(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); }
+  function renderHistory(){
+    var h=loadHistory(), list=$("historyList"), st=$("histState");
+    if(!h.length){ st.className="state wait"; st.textContent="暂无记录"; list.innerHTML='<p style="font-size:12px;color:var(--muted);">还没有发布记录，发布后会自动列在这里。</p>'; return; }
+    st.className="state ok"; st.textContent=h.length+" 条";
+    list.innerHTML="";
+    h.forEach(function(it){
+      var div=document.createElement("div"); div.className="hitem";
+      var t=document.createElement("span"); t.className="htime"; t.textContent=it.time;
+      var nm=document.createElement("span"); nm.className="hname"; nm.textContent=it.name;
+      var a=document.createElement("a"); a.href=it.url; a.target="_blank"; a.rel="noopener"; a.textContent="打开";
+      var cp=document.createElement("button"); cp.className="hcopy"; cp.textContent="复制";
+      cp.onclick=function(){ copyText(it.url); cp.textContent="✓"; setTimeout(function(){cp.textContent="复制";},1200); };
+      div.appendChild(t); div.appendChild(nm); div.appendChild(a); div.appendChild(cp);
+      list.appendChild(div);
+    });
+  }
+  $("clearHistoryBtn").onclick=function(){
+    if(confirm("确定清空全部发布记录？（只清这里的列表，不会删除 GitHub 上已发布的文件）")){
+      localStorage.removeItem("lfb_history"); renderHistory();
+    }
+  };
+  renderHistory();
+
+  function gh(method,url,token,body){
+    return fetch(url,{method:method,headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json","Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  }
+})();
+</script>
+</body>
+</html>
