@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#FFF7EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>媛媛的阅读成长地图</title>
+<style>
+  :root{
+    --cream:#FFF7EE;
+    --orange:#FF8A5C;
+    --orange-d:#F4693C;
+    --orange-l:#FFE9DB;
+    --pink:#FF8FB1;
+    --pink-d:#F2668E;
+    --pink-l:#FFD9E6;
+    --mint:#6FD3B6;
+    --mint-d:#3FB894;
+    --mint-l:#DCF6EC;
+    --sun:#FFC94D;
+    --sun-d:#C88700;
+    --sun-l:#FFF3D6;
+    --sky:#8EC5FF;
+    --sky-l:#DDEEFF;
+    --violet:#B79CF2;
+    --violet-l:#EBE3FF;
+    --ink:#4D3A34;
+    --ink-2:#9A857C;
+    --line:#F3E4D7;
+    --card:#FFFFFF;
+    --r:22px;
+    --shadow:0 6px 18px rgba(244,150,90,.16);
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    font-size:16px;
+    line-height:1.5;
+    overscroll-behavior-y:none;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 12% 6%, rgba(255,201,77,.15), transparent 42%),
+      radial-gradient(circle at 90% 12%, rgba(111,211,182,.13), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(255,138,92,.12), transparent 50%);
+  }
+  #app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:0 16px calc(126px + var(--safe-b));}
+
+  /* ---------- 顶部（非首页） ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    padding:calc(18px + env(safe-area-inset-top,0px)) 2px 12px;
+  }
+  .avatar{
+    width:46px;height:46px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(140deg,#FFAB6B,#FF6B55);
+    display:flex;align-items:center;justify-content:center;font-size:24px;
+    box-shadow:0 6px 14px rgba(250,110,70,.35);
+  }
+  .hi{flex:1;min-width:0}
+  .hi h1{margin:0;font-size:18px;letter-spacing:.2px}
+  .hi p{margin:2px 0 0;font-size:12px;color:var(--ink-2)}
+  .lvl{
+    background:#fff;border:2.5px solid var(--sun);border-radius:16px;
+    padding:5px 11px;font-size:12px;font-weight:800;color:var(--sun-d);
+    box-shadow:var(--shadow);flex:0 0 auto;white-space:nowrap;
+  }
+
+  /* ---------- 首页 Hero ---------- */
+  .hero{
+    margin-top:calc(16px + env(safe-area-inset-top,0px));
+    background:linear-gradient(150deg,#FFAB6B 0%,#FF6B55 100%);
+    border-radius:26px;padding:18px;
+    box-shadow:0 10px 26px rgba(250,110,70,.35);
+    margin-bottom:14px;position:relative;overflow:hidden;
+    animation:pop .34s cubic-bezier(.2,1.3,.5,1) both;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-34px;top:-34px;width:140px;height:140px;
+    border-radius:50%;background:rgba(255,255,255,.15);
+  }
+  .hero::before{
+    content:"";position:absolute;right:26px;bottom:-46px;width:100px;height:100px;
+    border-radius:50%;background:rgba(255,255,255,.09);
+  }
+  .hero-top{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+  .havatar{
+    width:56px;height:56px;border-radius:50%;background:#fff;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+    box-shadow:0 4px 12px rgba(200,80,40,.28);
+    animation:wobble 4.5s ease-in-out infinite;
+  }
+  @keyframes wobble{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  .hlvl{
+    background:rgba(255,255,255,.94);border-radius:15px;padding:6px 13px;
+    font-size:12.5px;font-weight:900;color:#E2603A;
+    display:inline-flex;align-items:center;gap:4px;white-space:nowrap;
+    box-shadow:0 3px 8px rgba(200,80,40,.18);
+  }
+  .hpoints{margin-left:auto;text-align:center;color:#fff;flex:0 0 auto}
+  .hpoints b{font-size:31px;font-weight:900;line-height:1.05;display:block;letter-spacing:-.5px;text-shadow:0 2px 6px rgba(200,60,30,.3)}
+  .hpoints span{font-size:10.5px;opacity:.92;font-weight:700}
+  .hbar{height:10px;border-radius:6px;background:rgba(255,255,255,.32);margin:15px 0 9px;overflow:hidden;position:relative;z-index:1}
+  .hbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#FFE08A,#FFC94D);transition:width .6s;box-shadow:0 0 8px rgba(255,220,130,.6)}
+  .hrow{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#fff;opacity:.96;position:relative;z-index:1;font-weight:700}
+  .hrow .r{opacity:.92;font-weight:600}
+
+  /* ---------- 首页统计 4 宫格 ---------- */
+  .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+  .scard{
+    background:#fff;border-radius:18px;padding:12px 2px 10px;text-align:center;
+    box-shadow:var(--shadow);border:1.5px solid #FBEFE3;
+    animation:pop .34s cubic-bezier(.2,1.3,.5,1) both;
+    font-family:inherit;color:var(--ink);
+  }
+  button.scard{cursor:pointer}
+  .scard .em{font-size:22px;line-height:1.2;display:block}
+  .scard b{display:block;font-size:15.5px;margin-top:3px;letter-spacing:-.3px}
+  .scard b i{font-style:normal;font-size:11px;font-weight:800;margin-left:1px}
+  .scard span{display:block;font-size:10.5px;color:var(--ink-2);margin-top:1px;font-weight:600}
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    background:var(--card);border-radius:var(--r);padding:18px;
+    box-shadow:var(--shadow);margin-bottom:14px;border:1.5px solid #FBEFE3;
+    animation:pop .34s cubic-bezier(.2,1.3,.5,1) both;
+  }
+  .card h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:7px}
+  .card .sub{margin:0 0 14px;font-size:12.5px;color:var(--ink-2)}
+
+  /* ---------- 今日目标 ---------- */
+  .goal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+  .goal-head h2{margin:0}
+  .goal-edit{
+    border:2px solid var(--line);background:#FFFDFB;border-radius:12px;
+    padding:5px 11px;font-size:12px;font-weight:800;color:var(--ink-2);
+    font-family:inherit;white-space:nowrap;
+  }
+  .gbar{height:17px;border-radius:10px;background:var(--orange-l);overflow:hidden;position:relative;margin-bottom:9px}
+  .gbar i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#8FE3C8,#3FB894);transition:width .6s;position:relative;min-width:0}
+  .gbar .gpct{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:900;color:#C99A72;z-index:1}
+  .goal-txt{font-size:13px;font-weight:700;color:var(--ink-2);margin:0 0 14px}
+  .goal-txt b{color:var(--mint-d)}
+  .goal-txt.hit{color:var(--mint-d)}
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    display:block;width:100%;border:none;border-radius:18px;
+    padding:15px;font-size:16px;font-weight:900;font-family:inherit;
+    color:#fff;background:linear-gradient(100deg,#FF9A5C 0%,#FF6E58 100%);
+    box-shadow:0 8px 20px rgba(250,110,70,.38);cursor:pointer;
+    transition:transform .14s, box-shadow .14s;
+  }
+  .btn:active{transform:scale(.97);box-shadow:0 3px 10px rgba(250,110,70,.38)}
+  .btn.dashed{background:#FFFDFB;color:var(--orange-d);border:2.5px dashed var(--orange);box-shadow:none}
+  .btn.ghost{background:#fff;color:var(--ink);border:2.5px solid var(--line);box-shadow:none}
+  .btn.sm{padding:11px;font-size:14.5px;border-radius:15px}
+  .btn.mint{background:linear-gradient(100deg,var(--mint),var(--sky));box-shadow:0 8px 20px rgba(111,211,182,.4)}
+  .btn:disabled{opacity:.5;box-shadow:none}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  /* ---------- 存钱罐 ---------- */
+  .piggy{display:flex;align-items:center;gap:12px}
+  .pg-emoji{
+    width:58px;height:58px;border-radius:50%;background:var(--sun-l);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+    animation:wobble 4s ease-in-out infinite;
+  }
+  .pg-mid{flex:1;min-width:0}
+  .pg-mid b{font-size:14.5px;display:block}
+  .pg-amount{font-size:27px;font-weight:900;color:var(--orange-d);line-height:1.25;letter-spacing:-.5px}
+  .pg-tip{font-size:11px;color:var(--ink-2);display:block;margin-top:1px;line-height:1.5}
+  .pg-bubble{
+    border:2px dashed #F0B24D;background:var(--sun-l);border-radius:16px;
+    padding:9px 13px;font-size:11px;font-weight:800;color:var(--sun-d);
+    font-family:inherit;flex:0 0 auto;line-height:1.5;text-align:center;cursor:pointer;
+  }
+
+  .cheer{
+    background:linear-gradient(100deg,var(--sun-l),var(--orange-l));
+    border-radius:18px;padding:13px;text-align:center;
+    font-size:13.5px;font-weight:800;color:#8A6A3B;margin-bottom:14px;
+    animation:pop .4s cubic-bezier(.2,1.3,.5,1) both;
+  }
+
+  /* ---------- 底部导航（5 项，中间凸起） ---------- */
+  .tabs{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:flex;align-items:flex-end;justify-content:center;gap:2px;
+    padding:6px 10px calc(7px + var(--safe-b));
+    background:rgba(255,255,255,.94);backdrop-filter:blur(14px);
+    border-top:1.5px solid #FBEFE3;
+  }
+  .tab{
+    flex:1;max-width:96px;border:none;background:none;font-family:inherit;
+    padding:6px 2px 3px;border-radius:16px;cursor:pointer;color:var(--ink-2);
+    font-size:11px;font-weight:800;transition:.16s;
+    display:flex;flex-direction:column;align-items:center;gap:1px;
+  }
+  .tab .em{font-size:21px;line-height:1.2;transition:.16s}
+  .tab.on{color:var(--orange-d);background:var(--orange-l)}
+  .tab.on .em{transform:scale(1.12) translateY(-1px)}
+  .tab.center{flex:1.15;background:none;overflow:visible}
+  .tab.center .circ{
+    width:57px;height:57px;margin:-32px auto 2px;border-radius:50%;
+    background:linear-gradient(140deg,#FFB35C,#FF6E58);
+    border:4px solid #fff;box-shadow:0 8px 18px rgba(249,112,63,.45);
+    display:flex;align-items:center;justify-content:center;font-size:26px;
+    transition:.16s;
+  }
+  .tab.center .tl{font-size:11px;font-weight:800;color:var(--ink-2)}
+  .tab.center.on .tl{color:var(--orange-d)}
+  .tab.center.on .circ{transform:scale(1.07)}
+
+  /* ---------- 打卡 ---------- */
+  .streakbar{
+    display:flex;align-items:center;gap:10px;background:linear-gradient(100deg,var(--sun-l),var(--orange-l));
+    border-radius:18px;padding:12px 14px;margin-bottom:14px;
+  }
+  .streakbar .flame{font-size:26px;animation:flame 1.5s ease-in-out infinite}
+  @keyframes flame{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.13) rotate(3deg)}}
+  .streakbar b{font-size:16px}
+  .streakbar .tip{font-size:11.5px;color:#9C7A50;display:block;margin-top:1px}
+
+  .durrow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:15px}
+  .dur{
+    border:2.5px solid var(--line);background:#FFFDFB;border-radius:16px;
+    padding:10px 2px;text-align:center;cursor:pointer;transition:.16s;
+    font-family:inherit;color:var(--ink);
+  }
+  .dur .em{display:block;font-size:20px;line-height:1.2}
+  .dur .tx{display:block;font-size:12px;font-weight:800;margin-top:2px}
+  .dur.on{border-color:var(--orange);background:var(--orange-l);transform:translateY(-2px);box-shadow:0 6px 14px rgba(255,138,92,.3)}
+
+  .optrow{display:flex;gap:9px;margin-bottom:15px;flex-wrap:wrap}
+  .opt{
+    border:2.5px solid var(--line);background:#FFFDFB;border-radius:14px;
+    padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer;transition:.16s;
+    font-family:inherit;color:var(--ink);
+  }
+  .opt.on{border-color:var(--mint);background:var(--mint-l);color:var(--mint-d)}
+
+  .field{position:relative;margin-bottom:14px}
+  .cinput,.ctextarea{
+    width:100%;border:2.5px solid var(--line);background:#FFFDFB;border-radius:16px;
+    padding:12px 14px;font-size:15px;font-family:inherit;color:var(--ink);
+    outline:none;transition:.16s;resize:none;
+  }
+  .cinput:focus,.ctextarea:focus{border-color:var(--orange);background:#fff}
+  .cinput::placeholder,.ctextarea::placeholder{color:#C9B4A7}
+  .cnt{position:absolute;right:12px;bottom:9px;font-size:11px;color:var(--ink-2)}
+
+  /* ---------- 书架 ---------- */
+  .statuschips{display:flex;gap:7px;margin-bottom:14px}
+  .chip{
+    flex:1;border:2.5px solid var(--line);background:#FFFDFB;border-radius:15px;
+    padding:9px 4px;text-align:center;cursor:pointer;font-family:inherit;
+    transition:.16s;color:var(--ink);
+  }
+  .chip .n{display:block;font-size:18px;font-weight:900;color:var(--ink-2)}
+  .chip .t{display:block;font-size:11.5px;font-weight:700;margin-top:1px;color:var(--ink-2)}
+  .chip.on{border-color:var(--violet);background:var(--violet-l)}
+  .chip.on .n,.chip.on .t{color:#6D4FC4}
+
+  .book{
+    display:flex;align-items:flex-start;gap:11px;padding:12px;
+    border-radius:18px;background:#FFFDFB;border:1.5px solid var(--line);
+    margin-bottom:9px;animation:pop .28s cubic-bezier(.2,1.3,.5,1) both;
+  }
+  .book .cover{
+    width:44px;height:58px;border-radius:10px;flex:0 0 auto;font-size:24px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset -3px 0 0 rgba(0,0,0,.06);
+  }
+  .book .info{flex:1;min-width:0}
+  .book .bt{font-weight:800;font-size:15px;margin:0;word-break:break-word}
+  .book .ba{font-size:11.5px;color:var(--ink-2);margin:1px 0 0}
+  .book .bn{font-size:11.5px;color:#A9969F;margin:4px 0 0;word-break:break-word}
+  .book .bars{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+  .mini{
+    border:1.5px solid var(--line);background:#fff;border-radius:10px;
+    width:27px;height:27px;font-size:13px;line-height:1;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-family:inherit;padding:0;transition:.14s;
+  }
+  .mini:active{transform:scale(.88)}
+  .mini.done{border-color:var(--mint);background:var(--mint-l)}
+  .mini.del{border-color:#FFD5D5;background:#FFF2F2}
+  .tagline{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:9px;margin-top:4px}
+
+  /* ---------- 成长地图 ---------- */
+  .path{position:relative;padding:4px 0 0}
+  .path::before{
+    content:"";position:absolute;left:27px;top:30px;bottom:34px;
+    border-left:3px dashed #FFD9C4;
+  }
+  .pnode{display:flex;align-items:center;gap:13px;position:relative;padding:9px 0}
+  .pdot{
+    width:54px;height:54px;border-radius:50%;flex:0 0 auto;z-index:1;
+    display:flex;align-items:center;justify-content:center;font-size:25px;
+    background:#fff;border:2.5px solid var(--line);
+  }
+  .pnode.done .pdot{background:linear-gradient(140deg,var(--sun-l),var(--orange-l));border-color:var(--orange)}
+  .pnode.cur .pdot{
+    background:linear-gradient(140deg,#FFB35C,#FF6E58);border-color:#fff;
+    box-shadow:0 0 0 4px #FFD9C4,0 6px 14px rgba(249,112,63,.4);
+  }
+  .pnode.locked .pdot{opacity:.5;filter:grayscale(.7)}
+  .pinfo{flex:1;min-width:0}
+  .pinfo b{font-size:15px;display:block}
+  .pnode.locked .pinfo b{color:var(--ink-2)}
+  .pinfo span{display:block;font-size:11.5px;color:var(--ink-2);margin-top:1px}
+  .pstate{margin-left:auto;font-size:12px;font-weight:900;flex:0 0 auto}
+  .pnode.done .pstate{color:var(--mint-d)}
+  .pnode.cur .pstate{color:var(--orange-d)}
+  .pnode.locked .pstate{color:#C9B4A7}
+
+  .bgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .badge{
+    background:#FFFDF9;border:1.5px solid var(--line);border-radius:14px;
+    padding:10px 2px 8px;text-align:center;
+  }
+  .badge .be{font-size:23px;line-height:1.2;display:block}
+  .badge .bn{font-size:9.5px;color:var(--ink-2);margin-top:4px;font-weight:700;display:block;line-height:1.25}
+  .badge.got{border-color:#FFDFA8;background:#FFF7E6;animation:pop .3s cubic-bezier(.2,1.3,.5,1) both}
+  .badge.locked{opacity:.42;filter:grayscale(1)}
+
+  /* ---------- 报告 ---------- */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:14px}
+  .stat{
+    border-radius:20px;padding:15px 13px;text-align:center;
+    animation:pop .4s cubic-bezier(.2,1.3,.5,1) both;
+  }
+  .stat .v{font-size:27px;font-weight:900;line-height:1.15;letter-spacing:-.5px}
+  .stat .v small{font-size:13px;font-weight:800;margin-left:1px}
+  .stat .k{font-size:11.5px;font-weight:700;margin-top:3px;opacity:.72}
+  .s1{background:var(--orange-l)} .s1 .v{color:var(--orange-d)}
+  .s2{background:var(--sun-l)}    .s2 .v{color:var(--sun-d)}
+  .s3{background:var(--mint-l)}   .s3 .v{color:var(--mint-d)}
+  .s4{background:var(--violet-l)} .s4 .v{color:#7B5AD8}
+
+  .chart{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;height:132px;padding:0 2px}
+  .bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+  .bar{
+    width:100%;max-width:38px;border-radius:9px 9px 5px 5px;min-height:5px;
+    background:linear-gradient(180deg,var(--sky),var(--sky-l));
+    transition:height .55s cubic-bezier(.2,1.2,.4,1);position:relative;
+  }
+  .bar.today{background:linear-gradient(180deg,var(--orange),var(--orange-l))}
+  .bar.best{background:linear-gradient(180deg,var(--sun),var(--sun-l))}
+  .bar .nv{
+    position:absolute;top:-17px;left:50%;transform:translateX(-50%);
+    font-size:10px;font-weight:800;color:var(--ink-2);white-space:nowrap;
+  }
+  .bar-wrap .day{font-size:11.5px;font-weight:800;color:var(--ink-2)}
+  .bar-wrap .day.today{color:var(--orange-d)}
+
+  .bubble{
+    background:linear-gradient(100deg,var(--violet-l),var(--sky-l));
+    border-radius:20px;padding:14px 16px;font-size:13.5px;line-height:1.6;
+    font-weight:600;
+  }
+  .bubble b{color:#6D4FC4}
+
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--ink-2);margin-top:10px;justify-content:center;flex-wrap:wrap}
+  .legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px}
+
+  .logrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13px;align-items:flex-start}
+  .logrow:last-child{border-bottom:none}
+  .logrow .d{font-weight:900;color:var(--orange-d);flex:0 0 46px;font-size:12px}
+  .logrow .m{flex:1;color:var(--ink-2);word-break:break-word}
+  .logrow .du{font-weight:900;color:var(--mint-d);flex:0 0 auto;font-size:12.5px}
+
+  /* ---------- 弹窗 ---------- */
+  .mask{
+    position:fixed;inset:0;background:rgba(77,58,52,.42);z-index:40;
+    display:flex;align-items:flex-end;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .22s;
+  }
+  .mask.on{opacity:1;pointer-events:auto}
+  .sheet{
+    background:#fff;width:100%;max-width:520px;border-radius:28px 28px 0 0;
+    padding:20px 18px calc(22px + var(--safe-b));transform:translateY(102%);
+    transition:transform .3s cubic-bezier(.2,1,.4,1);max-height:88vh;overflow-y:auto;
+  }
+  .mask.on .sheet{transform:none}
+  .sheet h3{margin:0 0 3px;font-size:18px}
+  .sheet .sub{margin:0 0 15px;font-size:12.5px;color:var(--ink-2)}
+  .grab{width:42px;height:5px;border-radius:3px;background:var(--line);margin:-8px auto 14px}
+  label.lb{display:block;font-size:12.5px;font-weight:800;color:var(--ink-2);margin:0 0 6px 3px}
+
+  /* ---------- 奖励 ---------- */
+  .reward{
+    position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    pointer-events:none;opacity:0;transition:opacity .3s;
+  }
+  .reward.on{opacity:1}
+  .reward .box{
+    background:#fff;border-radius:26px;padding:26px 30px;text-align:center;
+    box-shadow:0 20px 50px rgba(220,120,80,.4);transform:scale(.75);
+    transition:transform .38s cubic-bezier(.2,1.5,.4,1);border:3px solid var(--sun);
+  }
+  .reward.on .box{transform:scale(1)}
+  .reward .box .e{font-size:56px;line-height:1.1;animation:wobble .8s ease-in-out infinite}
+  .reward .box .t{font-size:19px;font-weight:900;margin-top:8px;color:var(--orange-d)}
+  .reward .box .s{font-size:13px;color:var(--ink-2);margin-top:4px}
+  .confetti{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden}
+  .cf{position:absolute;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+  @keyframes fall{
+    0%{transform:translateY(-30px) rotate(0);opacity:1}
+    100%{transform:translateY(102vh) rotate(680deg);opacity:.15}
+  }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:calc(110px + var(--safe-b));transform:translate(-50%,20px);
+    background:rgba(77,58,52,.92);color:#fff;padding:11px 20px;border-radius:16px;
+    font-size:13.5px;font-weight:700;z-index:70;opacity:0;pointer-events:none;
+    transition:.26s;max-width:86vw;text-align:center;
+  }
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  .empty{text-align:center;padding:30px 14px;color:var(--ink-2)}
+  .empty .e{font-size:46px;display:block;margin-bottom:8px;animation:wobble 3s ease-in-out infinite}
+  .empty p{margin:0;font-size:13.5px;line-height:1.7}
+  .hint{font-size:11.5px;color:var(--ink-2);text-align:center;margin:10px 0 4px;line-height:1.7}
+  .hidden{display:none!important}
+  .sortbadge{
+    display:inline-block;background:var(--mint-l);color:var(--mint-d);border-radius:10px;
+    padding:3px 9px;font-size:11px;font-weight:800;margin-left:6px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<nav class="tabs" id="tabs">
+  <button class="tab" data-tab="home"><span class="em">🏠</span>首页</button>
+  <button class="tab" data-tab="shelf"><span class="em">📚</span>书架</button>
+  <button class="tab center" data-tab="checkin"><span class="circ">⭐</span><span class="tl">打卡</span></button>
+  <button class="tab" data-tab="map"><span class="em">🗺️</span>地图</button>
+  <button class="tab" data-tab="report"><span class="em">📊</span>报告</button>
+</nav>
+
+<div class="mask" id="mask"><div class="sheet" id="sheet"></div></div>
+<div class="reward" id="reward"><div class="box" id="rewardBox"></div></div>
+<div class="confetti" id="confetti"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   媛媛的阅读成长地图 —— 纯本地单文件小工具
+   数据只存在本机（localStorage），完全不联网。
+   积分规则：读 1 分钟 = 1 积分
+   存钱罐规则：每读完一本书 = ¥5
+   ========================================================= */
+
+const KEY = 'coer_reading_map_v1';
+const NAME = '媛媛';
+
+/* ---------- 数据 ---------- */
+const DEFAULT = {
+  goal: 20,
+  books: [
+    { id: uid(), title: '夏洛的网', author: 'E·B·怀特', status: 'reading', emoji: '🕸️', note: '', order: 0 },
+    { id: uid(), title: '窗边的小豆豆', author: '黑柳彻子', status: 'read', emoji: '🌱', note: '', order: 1 },
+    { id: uid(), title: '神奇校车', author: '乔安娜·柯尔', status: 'want', emoji: '🚌', note: '', order: 2 }
+  ],
+  logs: {}   // { 'YYYY-MM-DD': { minutes, note, feeling, ts, sessions:[{minutes,note,feeling,ts}] } }
+};
+
+let state = load();
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+function migrate(d) {
+  if (typeof d.goal !== 'number' || d.goal < 5 || d.goal > 240) d.goal = 20;
+  Object.keys(d.logs || {}).forEach(k => {
+    const l = d.logs[k];
+    if (!Array.isArray(l.sessions)) {
+      l.sessions = [{ minutes: l.minutes, note: l.note, feeling: l.feeling, ts: l.ts || Date.now() }];
+    }
+  });
+  return d;
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return migrate(JSON.parse(JSON.stringify(DEFAULT)));
+    const d = JSON.parse(raw);
+    return migrate({
+      goal: d.goal,
+      books: Array.isArray(d.books) ? d.books : [],
+      logs: (d.logs && typeof d.logs === 'object') ? d.logs : {}
+    });
+  } catch (e) {
+    return migrate(JSON.parse(JSON.stringify(DEFAULT)));
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { toast('存储空间不足啦 😢'); }
+}
+
+/* ---------- 日期工具 ---------- */
+const WEEK = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+function ymd(d) {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+function today() { return ymd(new Date()); }
+function shift(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return ymd(dt);
+}
+function pretty(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const t = today();
+  if (dateStr === t) return '今天';
+  if (dateStr === shift(t, -1)) return '昨天';
+  return `${m}月${d}日 ${WEEK[dt.getDay()]}`;
+}
+function weekDates() {
+  const now = new Date();
+  const dow = (now.getDay() + 6) % 7;          // 周一=0
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+    out.push(ymd(d));
+  }
+  return out;
+}
+
+/* ---------- 统计 ---------- */
+function streak() {
+  let t = today();
+  if (!state.logs[t]) t = shift(t, -1);
+  let n = 0, cur = t;
+  while (state.logs[cur]) { n++; cur = shift(cur, -1); }
+  return n;
+}
+function weekMinutes() {
+  return weekDates().reduce((s, d) => s + (state.logs[d] ? state.logs[d].minutes : 0), 0);
+}
+function weekDays() {
+  return weekDates().filter(d => state.logs[d]).length;
+}
+function bestStreak() {
+  const keys = Object.keys(state.logs).sort();
+  if (!keys.length) return 0;
+  let best = 1, run = 1;
+  for (let i = 1; i < keys.length; i++) {
+    if (keys[i] === shift(keys[i - 1], 1)) { run++; best = Math.max(best, run); }
+    else run = 1;
+  }
+  return best;
+}
+function totalMinutes() {
+  return Object.values(state.logs).reduce((s, l) => s + (l.minutes || 0), 0);
+}
+function totalDays() { return Object.keys(state.logs).length; }
+function readCount() { return state.books.filter(b => b.status === 'read').length; }
+function maxDayMinutes() {
+  let m = 0;
+  Object.values(state.logs).forEach(l => { if (l.minutes > m) m = l.minutes; });
+  return m;
+}
+function todayMinutes() {
+  const l = state.logs[today()];
+  return l ? l.minutes : 0;
+}
+function piggy() { return readCount() * 5; }
+
+/* ---------- 等级（积分制：1 分钟 = 1 积分） ---------- */
+const LEVELS = [
+  { need: 0,    name: '阅读萌芽',   emoji: '🌱' },
+  { need: 100,  name: '阅读起步',   emoji: '👣' },
+  { need: 250,  name: '阅读小跑',   emoji: '🏃' },
+  { need: 450,  name: '阅读跳跃',   emoji: '🦘' },
+  { need: 700,  name: '阅读飞驰',   emoji: '🚀' },
+  { need: 1000, name: '阅读魔法师', emoji: '🧙' }
+];
+function levelInfo() {
+  const p = totalMinutes();
+  let i = 0;
+  for (let k = 0; k < LEVELS.length; k++) if (p >= LEVELS[k].need) i = k;
+  const cur = LEVELS[i], next = LEVELS[i + 1] || null;
+  return {
+    idx: i, num: i + 1, cur, next,
+    progress: next ? Math.min(1, (p - cur.need) / (next.need - cur.need)) : 1,
+    toNext: next ? Math.max(0, next.need - p) : 0
+  };
+}
+
+/* ---------- 徽章 ---------- */
+const BADGES = [
+  { id: 'first',    emoji: '🌱', name: '初次打卡',   test: s => s.days >= 1 },
+  { id: 'streak3',  emoji: '🔥', name: '连续3天',    test: s => s.best >= 3 },
+  { id: 'streak7',  emoji: '⚡', name: '连续7天',    test: s => s.best >= 7 },
+  { id: 'streak30', emoji: '🚀', name: '连续30天',   test: s => s.best >= 30 },
+  { id: 'book1',    emoji: '📚', name: '读完第1本',  test: s => s.read >= 1 },
+  { id: 'book5',    emoji: '📖', name: '读完5本',    test: s => s.read >= 5 },
+  { id: 'min60',    emoji: '⏰', name: '累计1小时',  test: s => s.minutes >= 60 },
+  { id: 'min300',   emoji: '🏅', name: '累计5小时',  test: s => s.minutes >= 300 },
+  { id: 'min600',   emoji: '🏆', name: '累计10小时', test: s => s.minutes >= 600 },
+  { id: 'day60',    emoji: '🌟', name: '单日读1小时', test: s => s.maxDay >= 60 }
+];
+function badgeStat() {
+  return { days: totalDays(), best: bestStreak(), read: readCount(), minutes: totalMinutes(), maxDay: maxDayMinutes() };
+}
+function earnedBadges() {
+  const s = badgeStat();
+  return BADGES.filter(b => b.test(s));
+}
+
+/* ---------- UI 临时状态 ---------- */
+let ui = {
+  tab: 'home',
+  dur: 20,
+  feeling: '😊 好开心',
+  shelfFilter: 'all',
+  sortMode: 'manual'
+};
+
+const FEELINGS = ['😊 好开心', '🤔 有点难', '😮 太有趣了', '😢 有点感动', '😴 想睡觉'];
+const DURS = [10, 15, 20, 30, 60];
+const COVER_COLORS = [
+  ['#FFD9E6', '#F2668E'], ['#D8F5EB', '#4FBF9F'], ['#FFF0CC', '#C88700'],
+  ['#EBE3FF', '#7B5AD8'], ['#DDEEFF', '#4A8FE0'], ['#FFE8DC', '#E07A45']
+];
+
+/* =========================================================
+   渲染
+   ========================================================= */
+const TITLES = { shelf: '我的书架', checkin: '阅读打卡', map: '成长地图', report: '阅读报告' };
+
+function render() {
+  document.getElementById('app').innerHTML = viewHeader() + viewMain();
+  bindMain();
+  document.querySelectorAll('.tab').forEach(b => {
+    b.classList.toggle('on', b.dataset.tab === ui.tab);
+  });
+}
+
+function viewHeader() {
+  if (ui.tab === 'home') return '';
+  const L = levelInfo();
+  return `<header class="topbar">
+    <div class="avatar">${L.cur.emoji}</div>
+    <div class="hi">
+      <h1>${TITLES[ui.tab] || ''}</h1>
+      <p>${NAME}的阅读成长地图</p>
+    </div>
+    <div class="lvl">Lv.${L.num} ${L.cur.name}</div>
+  </header>`;
+}
+
+function viewMain() {
+  if (ui.tab === 'home') return viewHome();
+  if (ui.tab === 'shelf') return viewShelf();
+  if (ui.tab === 'map') return viewMap();
+  if (ui.tab === 'checkin') return viewCheckin();
+  return viewReport();
+}
+
+/* ================= 首页 ================= */
+function viewHome() {
+  const L = levelInfo();
+  const tm = totalMinutes();
+  const st = streak();
+  const rc = readCount();
+  const bc = earnedBadges().length;
+  const goal = state.goal;
+  const doneM = todayMinutes();
+  const pct = Math.min(100, Math.round(doneM / goal * 100));
+  const left = Math.max(0, goal - doneM);
+  const hit = doneM >= goal;
+
+  return `
+  <section class="hero">
+    <div class="hero-top">
+      <div class="havatar">🦄</div>
+      <span class="hlvl">⭐ Lv.${L.num} ${L.cur.name}</span>
+      <div class="hpoints"><b>${tm}</b><span>成长积分</span></div>
+    </div>
+    <div class="hbar"><i style="width:${Math.round(L.progress * 100)}%"></i></div>
+    <div class="hrow">
+      <span>Lv.${L.num} ${L.cur.name}</span>
+      <span class="r">${L.next
+        ? `距离 Lv.${L.num + 1} ${L.next.name} 还差 ${L.toNext} 分`
+        : '已到最高等级 🎉'}</span>
+    </div>
+  </section>
+
+  <div class="statgrid">
+    <div class="scard"><span class="em">⏱️</span><b>${tm}<i>分钟</i></b><span>累计阅读</span></div>
+    <div class="scard"><span class="em">🔥</span><b>${st}<i>天</i></b><span>连续阅读</span></div>
+    <div class="scard"><span class="em">📚</span><b>${rc}<i>本</i></b><span>已读书籍</span></div>
+    <button class="scard" data-act="gomap"><span class="em">🏅</span><b>${bc}<i>枚</i></b><span>获得徽章</span></button>
+  </div>
+
+  <div class="card">
+    <div class="goal-head">
+      <h2>📖 今日阅读目标</h2>
+      <button class="goal-edit" data-act="editgoal">目标 ${goal} 分钟 ✏️</button>
+    </div>
+    <div class="gbar">
+      <i style="width:${pct}%"></i>
+      <span class="gpct">${pct}%</span>
+    </div>
+    <p class="goal-txt ${hit ? 'hit' : ''}">${hit
+      ? `🎉 今日目标已达成，真棒！多读的都算加分`
+      : `已读 <b>${doneM}</b> 分钟，再读 <b>${left}</b> 分钟达成目标`}</p>
+    <div class="row2">
+      <button class="btn" data-act="gostart">🚀 开始阅读</button>
+      <button class="btn dashed" data-act="quickdone">${state.logs[today()] ? '➕ 再读一会儿' : '✅ 完成今日阅读'}</button>
+    </div>
+  </div>
+
+  <div class="card piggy">
+    <div class="pg-emoji">🐷</div>
+    <div class="pg-mid">
+      <b>我的阅读存钱罐</b>
+      <div class="pg-amount">¥${piggy()}</div>
+      <span class="pg-tip">读完一本好书，就能换 ¥5 零花钱</span>
+    </div>
+    <button class="pg-bubble" data-act="piggydetail">📖 读完一本书<br>+ ¥5</button>
+  </div>
+
+  <div class="cheer">✨ ${cheerLine()}</div>
+
+  <p class="hint">🔒 所有记录只保存在这台手机里，不会上传到任何地方</p>`;
+}
+
+function cheerLine() {
+  const t = today();
+  const l = state.logs[t];
+  if (l && l.minutes >= state.goal) return '今天也满载而归，明天继续呀 🌈';
+  if (l) return `今天已读 ${l.minutes} 分钟，离目标只差一点点啦 💪`;
+  const y = state.logs[shift(t, -1)];
+  if (y) return `昨天读了 ${y.minutes} 分钟，今天也迈出了第一步 🌱`;
+  if (totalDays() === 0) return '今天也迈出了第一步 🌱';
+  return '好久没翻开书啦，想它了吗？📖';
+}
+
+/* ================= 打卡页 ================= */
+function viewCheckin() {
+  const t = today();
+  const done = state.logs[t];
+  const st = streak();
+
+  return `
+  <div class="card">
+    <div class="streakbar">
+      <span class="flame">🔥</span>
+      <div>
+        <b>连续阅读 ${st} 天</b>
+        <span class="tip">${st === 0 ? '今天读一读，点亮小火苗吧！' : st >= 7 ? '哇，坚持一整周啦，超厉害！' : '保持住，小火苗越烧越旺～'}</span>
+      </div>
+    </div>
+
+    ${done ? `
+      <h2>✅ 今天已经读了 ${done.minutes} 分钟</h2>
+      <p class="sub">${pretty(t)} · 目标 ${state.goal} 分钟 · ${done.minutes >= state.goal ? '已达成 🎉' : `还差 ${state.goal - done.minutes} 分钟`}</p>
+      <div class="bubble" style="margin-bottom:14px">
+        ${done.feeling ? `<div style="font-size:15px;margin-bottom:4px">${esc(done.feeling)}</div>` : ''}
+        ${done.note ? `“${esc(done.note)}”` : '<span style="color:var(--ink-2)">今天没写笔记，下次可以写一句哦～</span>'}
+      </div>
+      ${(done.sessions || []).length > 1 ? `
+        <p style="margin:0 0 6px;font-size:12.5px;font-weight:800;color:var(--ink-2)">今天的阅读小记录</p>
+        ${done.sessions.map((s, i) => `<div class="logrow">
+          <span class="d">第${i + 1}次</span>
+          <span class="m">${s.note ? esc(s.note) : '<span style="color:#C9B4A7">（没写笔记）</span>'}</span>
+          <span class="du">${s.minutes}分</span>
+        </div>`).join('')}
+      ` : ''}
+      <div class="row2" style="margin-top:14px">
+        <button class="btn sm" data-act="quickdone">➕ 再读一会儿</button>
+        <button class="btn ghost sm" data-act="recheck">✏️ 修改今天</button>
+      </div>
+      <button class="btn ghost sm" data-act="readtoday" style="margin-top:10px">📊 看看报告</button>
+    ` : `
+      <h2>📖 今天读了多久？</h2>
+      <p class="sub">点一下选中，再写一句话就好啦</p>
+      <div class="durrow">
+        ${DURS.map(d => `<button class="dur ${ui.dur === d ? 'on' : ''}" data-dur="${d}">
+          <span class="em">${d >= 60 ? '🏆' : d >= 30 ? '🌟' : d >= 20 ? '🌻' : '🌱'}</span>
+          <span class="tx">${d}分钟</span>
+        </button>`).join('')}
+      </div>
+
+      <label class="lb">今天感觉怎么样？</label>
+      <div class="optrow">
+        ${FEELINGS.map(f => `<button class="opt ${ui.feeling === f ? 'on' : ''}" data-feel="${esc(f)}">${f}</button>`).join('')}
+      </div>
+
+      <div class="field">
+        <textarea class="ctextarea" id="note" rows="3" maxlength="60"
+          placeholder="今天读到了什么？写一句话吧～（可不写）"></textarea>
+        <span class="cnt" id="cnt">0/60</span>
+      </div>
+
+      <button class="btn" data-act="checkin">🎉 完成今天的打卡</button>
+    `}
+  </div>
+
+  ${viewWeekMini()}
+
+  <p class="hint">🔒 本工具不联网，全部数据保存在这台手机的浏览器里</p>`;
+}
+
+function viewWeekMini() {
+  const ds = weekDates();
+  const t = today();
+  return `<div class="card">
+    <h2>🗓️ 这周的小脚印</h2>
+    <p class="sub">打卡的日子会亮起来</p>
+    <div style="display:flex;justify-content:space-between;gap:5px">
+      ${ds.map(d => {
+        const has = !!state.logs[d];
+        const dt = new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+        const isToday = d === t;
+        return `<div style="flex:1;text-align:center">
+          <div style="height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:19px;
+            background:${has ? 'linear-gradient(140deg,var(--sun-l),var(--orange-l))' : '#FBF6F0'};
+            border:2.5px solid ${isToday ? 'var(--orange)' : has ? '#FFE0B8' : 'var(--line)'}">
+            ${has ? '⭐' : '<span style="font-size:14px;color:#DCC8BB">·</span>'}
+          </div>
+          <div style="font-size:11px;margin-top:5px;font-weight:800;color:${isToday ? 'var(--orange-d)' : 'var(--ink-2)'}">
+            ${WEEK[dt.getDay()].slice(1)}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+/* ================= 书架页 ================= */
+const STATUS = {
+  want:    { label: '想读',   emoji: '💭', color: '#7B5AD8', bg: 'var(--violet-l)' },
+  reading: { label: '正在读', emoji: '📖', color: '#F4693C', bg: 'var(--orange-l)' },
+  read:    { label: '已读完', emoji: '🎉', color: '#3FB894', bg: 'var(--mint-l)' }
+};
+const EMOJIS = ['📕', '📗', '📘', '📙', '📚', '🧸', '🚀', '🐻', '🌈', '🦄', '🍀', '🌙', '⭐', '🐳', '🕸️', '🌱'];
+
+function viewShelf() {
+  const all = state.books;
+  const cnt = {
+    all: all.length,
+    want: all.filter(b => b.status === 'want').length,
+    reading: all.filter(b => b.status === 'reading').length,
+    read: all.filter(b => b.status === 'read').length
+  };
+  let list = ui.shelfFilter === 'all' ? all.slice() : all.filter(b => b.status === ui.shelfFilter);
+  list.sort((a, b) => ui.sortMode === 'time' ? (b.order || 0) - (a.order || 0) : (a.order || 0) - (b.order || 0));
+
+  return `
+  <div class="card">
+    <h2>📚 我的书架 ${ui.sortMode === 'time'
+      ? '<span class="sortbadge">最近添加在前</span>'
+      : '<span class="sortbadge">我的排序</span>'}</h2>
+    <p class="sub">共 ${cnt.all} 本 · 已读完 ${cnt.read} 本 · 每读完一本，存钱罐 +¥5</p>
+
+    <div class="statuschips">
+      <button class="chip ${ui.shelfFilter === 'all' ? 'on' : ''}" data-filter="all">
+        <span class="n">${cnt.all}</span><span class="t">全部</span></button>
+      <button class="chip ${ui.shelfFilter === 'want' ? 'on' : ''}" data-filter="want">
+        <span class="n">${cnt.want}</span><span class="t">💭 想读</span></button>
+      <button class="chip ${ui.shelfFilter === 'reading' ? 'on' : ''}" data-filter="reading">
+        <span class="n">${cnt.reading}</span><span class="t">📖 在读</span></button>
+      <button class="chip ${ui.shelfFilter === 'read' ? 'on' : ''}" data-filter="read">
+        <span class="n">${cnt.read}</span><span class="t">🎉 读完</span></button>
+    </div>
+
+    <div class="row2" style="margin-bottom:14px">
+      <button class="btn sm" data-act="addbook">➕ 添加一本书</button>
+      <button class="btn ghost sm" data-act="togglesort">
+        ${ui.sortMode === 'manual' ? '↕️ 换排序方式' : '↕️ 换回我的排序'}
+      </button>
+    </div>
+
+    ${list.length ? list.map(b => viewBook(b, list)).join('') : `
+      <div class="empty">
+        <span class="e">📭</span>
+        <p>这里还空空的～<br>点上面的按钮，把想读的书放进来吧！</p>
+      </div>`}
+  </div>`;
+}
+
+function viewBook(b, list) {
+  const s = STATUS[b.status] || STATUS.want;
+  const ci = Math.abs(hash(b.title)) % COVER_COLORS.length;
+  const c = COVER_COLORS[ci];
+  const idx = list.findIndex(x => x.id === b.id);
+  const canUp = ui.sortMode === 'manual' && idx > 0;
+  const canDown = ui.sortMode === 'manual' && idx < list.length - 1;
+
+  return `<div class="book">
+    <div class="cover" style="background:linear-gradient(150deg,${c[0]},${c[1]});color:#fff">${b.emoji || '📖'}</div>
+    <div class="info">
+      <p class="bt">${esc(b.title)}</p>
+      <p class="ba">${b.author ? esc(b.author) : '（没写作者）'}</p>
+      <span class="tagline" style="background:${s.bg};color:${s.color}">${s.emoji} ${s.label}</span>
+      ${b.note ? `<p class="bn">💬 ${esc(b.note)}</p>` : ''}
+      <div class="bars">
+        <button class="mini" data-act="moveup" data-id="${b.id}" ${canUp ? '' : 'disabled style="opacity:.3"'} title="上移">⬆️</button>
+        <button class="mini" data-act="movedown" data-id="${b.id}" ${canDown ? '' : 'disabled style="opacity:.3"'} title="下移">⬇️</button>
+        <button class="mini" data-act="editbook" data-id="${b.id}" title="编辑">✏️</button>
+        <button class="mini done" data-act="cycle" data-id="${b.id}" title="切换状态">🔄</button>
+        <button class="mini del" data-act="delbook" data-id="${b.id}" title="删除">🗑️</button>
+      </div>
+    </div>
+  </div>`;
+}
+function hash(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h;
+}
+
+/* ================= 成长地图页 ================= */
+function viewMap() {
+  const p = totalMinutes();
+  const L = levelInfo();
+  const got = earnedBadges();
+  const gotIds = got.map(b => b.id);
+
+  const nodes = LEVELS.map((lv, i) => {
+    const isDone = p >= lv.need;
+    const cur = i === L.idx;
+    const cls = isDone && !cur ? 'done' : cur ? 'cur' : 'locked';
+    const stateTxt = cur ? '📍 现在在这里' : isDone ? '✅ 已达成' : `🔒 还差 ${lv.need - p} 分`;
+    return `<div class="pnode ${cls}">
+      <div class="pdot">${lv.emoji}</div>
+      <div class="pinfo">
+        <b>Lv.${i + 1} ${lv.name}</b>
+        <span>需要 ${lv.need} 积分</span>
+      </div>
+      <span class="pstate">${stateTxt}</span>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>🗺️ 成长之路</h2>
+    <p class="sub">读 1 分钟 = 1 积分，一共攒了 <b style="color:var(--orange-d)">${p}</b> 分</p>
+    <div class="path">${nodes}</div>
+  </div>
+
+  <div class="card">
+    <h2>🏅 我的徽章墙</h2>
+    <p class="sub">已收集 ${got.length} / ${BADGES.length} 枚，点亮的都是真本事</p>
+    <div class="bgrid">
+      ${BADGES.map(b => `<div class="badge ${gotIds.includes(b.id) ? 'got' : 'locked'}">
+        <span class="be">${b.emoji}</span><span class="bn">${b.name}</span>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <p class="hint">🔒 本工具不联网，全部数据保存在这台手机的浏览器里</p>`;
+}
+
+/* ================= 报告页 ================= */
+function viewReport() {
+  const ds = weekDates();
+  const t = today();
+  const wm = weekMinutes();
+  const st = streak();
+  const wd = weekDays();
+  const bs = bestStreak();
+  const L = levelInfo();
+  const bc = earnedBadges().length;
+
+  const vals = ds.map(d => state.logs[d] ? state.logs[d].minutes : 0);
+  const max = Math.max(...vals, 10);
+  const bestVal = Math.max(...vals);
+  const logs = Object.keys(state.logs).sort().reverse().slice(0, 10);
+
+  let cheer;
+  if (totalDays() === 0) cheer = `还没开始呢，今天就是我们${NAME}阅读冒险的第一天！`;
+  else if (st >= 14) cheer = `<b>连续 ${st} 天</b>！这个坚持太厉害了，你已经是真正的阅读小魔法师啦 🧙`;
+  else if (st >= 7) cheer = `已经连续 <b>${st} 天</b>了，整整一周！再加把劲就能升到下一等级～`;
+  else if (st >= 3) cheer = `连续 <b>${st} 天</b>，习惯正在慢慢长出来 🌱 明天继续呀！`;
+  else if (wd >= 1) cheer = `这周读了 <b>${wd} 天</b>，每一页都算数。明天再来点亮一颗星吧 ⭐`;
+  else cheer = `这周还没开始，不如现在就读 10 分钟？`;
+
+  return `
+  <div class="card">
+    <h2>📊 本周阅读报告</h2>
+    <p class="sub">${ds[0].slice(5).replace('-', '/')} — ${ds[6].slice(5).replace('-', '/')}（周一至周日）</p>
+
+    <div class="stats">
+      <div class="stat s1"><div class="v">${wm}<small>分</small></div><div class="k">本周阅读时长</div></div>
+      <div class="stat s2"><div class="v">${st}<small>天</small></div><div class="k">连续打卡天数</div></div>
+      <div class="stat s3"><div class="v">${wd}<small>天</small></div><div class="k">本周打卡天数</div></div>
+      <div class="stat s4"><div class="v">${totalDays()}<small>天</small></div><div class="k">累计打卡天数</div></div>
+    </div>
+
+    <div class="chart" style="margin-bottom:6px">
+      ${ds.map((d, i) => {
+        const v = vals[i];
+        const h = v === 0 ? 4 : Math.max(12, Math.round(v / max * 104));
+        const cls = d === t ? 'today' : (v === bestVal && v > 0 ? 'best' : '');
+        const dt = new Date(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+        return `<div class="bar-wrap">
+          <div class="bar ${cls}" style="height:${h}px">
+            ${v > 0 ? `<span class="nv">${v}</span>` : ''}
+          </div>
+          <div class="day ${d === t ? 'today' : ''}">${WEEK[dt.getDay()].slice(1)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--orange)"></i>今天</span>
+      <span><i style="background:var(--sun)"></i>本周最多</span>
+      <span><i style="background:var(--sky)"></i>其他日子</span>
+      <span>单位：分钟</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🏅 我的成长</h2>
+    <p class="sub">累计阅读 ${totalMinutes()} 分钟 · 共 ${totalDays()} 天 · 徽章 ${bc} 枚 · 存钱罐 ¥${piggy()}</p>
+    <div class="bubble" style="margin-bottom:14px">
+      <div style="font-size:20px;font-weight:900;margin-bottom:6px">${L.cur.emoji} Lv.${L.num} ${L.cur.name}</div>
+      <div style="height:12px;border-radius:7px;background:rgba(255,255,255,.75);overflow:hidden;margin-bottom:6px">
+        <div style="height:100%;width:${Math.round(L.progress * 100)}%;border-radius:7px;
+          background:linear-gradient(90deg,var(--violet),var(--sky));transition:width .6s"></div>
+      </div>
+      ${L.next
+        ? `<div style="font-size:12.5px">还差 <b>${L.toNext} 积分</b> 就能升级到 ${L.next.emoji} Lv.${L.num + 1} <b>${L.next.name}</b> 啦！</div>`
+        : `<div style="font-size:12.5px">已经是最高等级啦，你就是传说中的阅读魔法师 🧙✨</div>`}
+    </div>
+    <div class="bubble" style="background:linear-gradient(100deg,var(--sun-l),var(--orange-l))">
+      ${cheer}
+      <div style="font-size:12px;margin-top:8px;color:#9C7A50">🏆 最长连续记录：${bs} 天</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📝 最近的阅读记录</h2>
+    <p class="sub">一共记录了 ${Object.keys(state.logs).length} 天</p>
+    ${logs.length ? logs.map(d => {
+      const l = state.logs[d];
+      const sn = (l.sessions || []).length;
+      return `<div class="logrow">
+        <span class="d">${pretty(d)}</span>
+        <span class="m">${l.note ? esc(l.note) : '<span style="color:#C9B4A7">（没写笔记）</span>'}${l.feeling ? `<br><span style="font-size:11.5px">${esc(l.feeling)}</span>` : ''}${sn > 1 ? `<br><span style="font-size:10.5px;color:#C9B4A7">当天分 ${sn} 次阅读</span>` : ''}</span>
+        <span class="du">${l.minutes}分</span>
+      </div>`;
+    }).join('') : `<div class="empty"><span class="e">🌱</span><p>还没有记录，快去打卡吧！</p></div>`}
+  </div>
+
+  <div class="card">
+    <h2>⚙️ 小设置</h2>
+    <p class="sub">数据都在本机，换手机或清缓存前记得备份</p>
+    <div class="row2" style="margin-bottom:10px">
+      <button class="btn ghost sm" data-act="export">📤 导出备份</button>
+      <button class="btn ghost sm" data-act="import">📥 导入备份</button>
+    </div>
+    <button class="btn ghost sm" data-act="editgoal" style="margin-bottom:10px">🎯 设置每日目标（现在 ${state.goal} 分钟）</button>
+    <button class="btn ghost sm" data-act="reset" style="color:#D9534F">🧹 清空全部数据</button>
+  </div>
+
+  <p class="hint">🔒 本工具不联网，全部数据保存在这台手机的浏览器里</p>`;
+}
+
+/* =========================================================
+   打卡逻辑（支持一天多次）
+   ========================================================= */
+function addSession(minutes, note, feeling) {
+  const t = today();
+  const before = streak();
+  const prevMin = state.logs[t] ? state.logs[t].minutes : 0;
+
+  const sess = { minutes, note: note || '', feeling: feeling || '', ts: Date.now() };
+  if (state.logs[t]) {
+    const l = state.logs[t];
+    l.minutes += minutes;
+    if (note) l.note = note;
+    if (feeling) l.feeling = feeling;
+    l.sessions.push(sess);
+  } else {
+    state.logs[t] = { minutes, note: note || '', feeling: feeling || '', ts: Date.now(), sessions: [sess] };
+  }
+  save();
+
+  const after = streak();
+  const goalHit = prevMin < state.goal && state.logs[t].minutes >= state.goal;
+  reward(minutes, after, before, goalHit);
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function doCheckin() {
+  if (state.logs[today()]) { toast('今天已经有记录啦，可以点「再读一会儿」'); return; }
+  const noteEl = document.getElementById('note');
+  addSession(ui.dur, noteEl ? noteEl.value.trim() : '', ui.feeling);
+}
+
+/* ---------- 快速打卡弹窗（首页 / 再读一会儿 共用） ---------- */
+function openQuickSheet() {
+  const has = !!state.logs[today()];
+  let picked = 20;
+
+  openSheet(`
+    <div class="grab"></div>
+    <h3>${has ? '➕ 再读一会儿' : '✅ 完成今日阅读'}</h3>
+    <p class="sub">${has ? '真棒，读完记一笔，积分照加' : `今日目标 ${state.goal} 分钟，读完打卡就能拿积分`}</p>
+
+    <label class="lb">这次读了多久？</label>
+    <div class="durrow">
+      ${DURS.map(d => `<button class="dur ${d === 20 ? 'on' : ''}" data-rdur="${d}">
+        <span class="em">${d >= 60 ? '🏆' : d >= 30 ? '🌟' : d >= 20 ? '🌻' : '🌱'}</span>
+        <span class="tx">${d}分钟</span></button>`).join('')}
+    </div>
+    <div class="field">
+      <input class="cinput" id="rdur2" type="number" min="1" max="600" placeholder="也可以自己填分钟数（1-600）" value="20">
+    </div>
+
+    <label class="lb">感觉怎么样？</label>
+    <div class="optrow">
+      ${FEELINGS.map(f => `<button class="opt ${f === '😊 好开心' ? 'on' : ''}" data-feel2="${esc(f)}">${f}</button>`).join('')}
+    </div>
+
+    <label class="lb">一句话笔记（可不写）</label>
+    <div class="field">
+      <textarea class="ctextarea" id="rnote" rows="2" maxlength="60" placeholder="这次读到了什么？"></textarea>
+    </div>
+
+    <button class="btn" data-sheet="quickSave">🎉 记下这次阅读</button>
+  `, (root) => {
+    let feeling = '😊 好开心';
+    const inp = root.querySelector('#rdur2');
+    root.querySelectorAll('[data-rdur]').forEach(el => {
+      el.addEventListener('click', () => {
+        picked = +el.dataset.rdur;
+        inp.value = picked;
+        root.querySelectorAll('[data-rdur]').forEach(x => x.classList.toggle('on', x === el));
+        buzz(12);
+      });
+    });
+    inp.addEventListener('input', () => {
+      picked = +inp.value || 0;
+      root.querySelectorAll('[data-rdur]').forEach(x => x.classList.toggle('on', +x.dataset.rdur === picked));
+    });
+    root.querySelectorAll('[data-feel2]').forEach(el => {
+      el.addEventListener('click', () => {
+        feeling = el.dataset.feel2;
+        root.querySelectorAll('[data-feel2]').forEach(x => x.classList.toggle('on', x === el));
+        buzz(12);
+      });
+    });
+    root.querySelector('[data-sheet="quickSave"]').onclick = () => {
+      const m = Math.min(600, Math.max(1, +inp.value || picked || 1));
+      addSession(m, root.querySelector('#rnote').value.trim(), feeling);
+      closeSheet();
+    };
+  });
+}
+
+/* ---------- 修改今天的记录 ---------- */
+function doRecheck() {
+  const t = today();
+  const l = state.logs[t];
+  openSheet(`
+    <div class="grab"></div>
+    <h3>✏️ 修改今天的记录</h3>
+    <p class="sub">${pretty(t)} · 现在共 ${l.minutes} 分钟</p>
+
+    <label class="lb">今日总时长</label>
+    <div class="field">
+      <input class="cinput" id="rdur2" type="number" min="1" max="1200" value="${l.minutes}">
+    </div>
+
+    <label class="lb">一句话笔记</label>
+    <div class="field">
+      <textarea class="ctextarea" id="rnote" rows="3" maxlength="60" placeholder="今天读到了什么？">${esc(l.note || '')}</textarea>
+    </div>
+
+    <div class="row2" style="margin-top:4px">
+      <button class="btn ghost" data-sheet="cancel">取消</button>
+      <button class="btn" data-sheet="saveToday">保存</button>
+    </div>
+    <button class="btn ghost sm" style="margin-top:10px;color:#D9534F" data-sheet="delToday">🗑️ 删掉今天的打卡</button>
+  `, (root) => {
+    root.querySelector('[data-sheet="cancel"]').onclick = closeSheet;
+    root.querySelector('[data-sheet="saveToday"]').onclick = () => {
+      const m = Math.min(1200, Math.max(1, +root.querySelector('#rdur2').value || 1));
+      state.logs[t].minutes = m;
+      state.logs[t].note = root.querySelector('#rnote').value.trim();
+      save(); closeSheet(); render(); toast('改好啦 ✅');
+    };
+    root.querySelector('[data-sheet="delToday"]').onclick = () => {
+      askConfirm('删掉今天的打卡？', '今天的记录会消失，其他天数不受影响。', () => {
+        delete state.logs[t]; save(); closeSheet(); render(); toast('今天的打卡已删除');
+      });
+    };
+  });
+}
+
+/* ---------- 目标设置 ---------- */
+function openGoalSheet() {
+  openSheet(`
+    <div class="grab"></div>
+    <h3>🎯 每日阅读目标</h3>
+    <p class="sub">每天读满目标分钟，首页的进度条就会亮起来</p>
+    <div class="field">
+      <input class="cinput" id="gval" type="number" min="5" max="240" step="5" value="${state.goal}">
+    </div>
+    <div class="optrow">
+      ${[15, 20, 30, 45, 60].map(v => `<button class="opt ${state.goal === v ? 'on' : ''}" data-g="${v}">${v}分钟</button>`).join('')}
+    </div>
+    <div class="row2">
+      <button class="btn ghost" data-sheet="cancel">取消</button>
+      <button class="btn" data-sheet="saveGoal">保存</button>
+    </div>
+  `, (root) => {
+    const inp = root.querySelector('#gval');
+    root.querySelectorAll('[data-g]').forEach(el => {
+      el.addEventListener('click', () => {
+        inp.value = el.dataset.g;
+        root.querySelectorAll('[data-g]').forEach(x => x.classList.toggle('on', x === el));
+        buzz(12);
+      });
+    });
+    root.querySelector('[data-sheet="cancel"]').onclick = closeSheet;
+    root.querySelector('[data-sheet="saveGoal"]').onclick = () => {
+      const v = Math.min(240, Math.max(5, +inp.value || 20));
+      state.goal = v; save(); closeSheet(); render(); toast(`每日目标设为 ${v} 分钟 ✅`);
+    };
+  });
+}
+
+/* ---------- 存钱罐明细 ---------- */
+function openPiggySheet() {
+  const done = state.books.filter(b => b.status === 'read');
+  openSheet(`
+    <div class="grab"></div>
+    <h3>🐷 存钱罐小账本</h3>
+    <p class="sub">每读完一本书，就会存进 ¥5 零花钱</p>
+    ${done.length ? done.map(b => `<div class="logrow">
+        <span class="d">${b.emoji || '📖'}</span>
+        <span class="m">${esc(b.title)}</span>
+        <span class="du">+¥5</span>
+      </div>`).join('') + `
+      <div class="logrow" style="border-top:2px solid var(--line);margin-top:4px">
+        <span class="d">💰</span>
+        <span class="m" style="font-weight:900;color:var(--ink)">一共存了</span>
+        <span class="du" style="font-size:15px">¥${done.length * 5}</span>
+      </div>`
+    : `<div class="empty"><span class="e">🐷</span><p>存钱罐还是空的～<br>去书架把一本书标记为「已读完」吧！</p></div>`}
+    <button class="btn" data-sheet="cancel" style="margin-top:14px">好啦</button>
+  `, (root) => { root.querySelector('[data-sheet="cancel"]').onclick = closeSheet; });
+}
+
+/* ---------- 书架操作 ---------- */
+function openBookSheet(book) {
+  const isEdit = !!book;
+  const b = book || { id: uid(), title: '', author: '', status: 'want', emoji: '📕', note: '', order: 0 };
+
+  openSheet(`
+    <div class="grab"></div>
+    <h3>${isEdit ? '✏️ 编辑这本书' : '➕ 添加一本书'}</h3>
+    <p class="sub">书名一定要写哦，其他都可以不填</p>
+
+    <label class="lb">书名</label>
+    <div class="field"><input class="cinput" id="btitle" maxlength="30" placeholder="比如：夏洛的网" value="${esc(b.title)}"></div>
+
+    <label class="lb">作者</label>
+    <div class="field"><input class="cinput" id="bauthor" maxlength="20" placeholder="可不填" value="${esc(b.author || '')}"></div>
+
+    <label class="lb">放哪个书架？</label>
+    <div class="optrow">
+      ${Object.keys(STATUS).map(k => `<button class="opt ${b.status === k ? 'on' : ''}" data-st="${k}">
+        ${STATUS[k].emoji} ${STATUS[k].label}</button>`).join('')}
+    </div>
+
+    <label class="lb">选个小封面</label>
+    <div class="optrow" style="max-height:96px;overflow-y:auto">
+      ${EMOJIS.map(e => `<button class="opt ${b.emoji === e ? 'on' : ''}" data-em="${e}" style="font-size:19px;padding:6px 10px">${e}</button>`).join('')}
+    </div>
+
+    <label class="lb">小备注（可不填）</label>
+    <div class="field"><input class="cinput" id="bnote" maxlength="30" placeholder="比如：同学推荐的 / 图书馆借的" value="${esc(b.note || '')}"></div>
+
+    <div class="row2" style="margin-top:4px">
+      <button class="btn ghost" data-sheet="cancel">取消</button>
+      <button class="btn" data-sheet="saveBook">${isEdit ? '保存修改' : '放进书架'}</button>
+    </div>
+  `, (root) => {
+    let status = b.status, emoji = b.emoji || '📕';
+    root.querySelectorAll('[data-st]').forEach(el => {
+      el.addEventListener('click', () => {
+        status = el.dataset.st;
+        root.querySelectorAll('[data-st]').forEach(x => x.classList.toggle('on', x === el));
+        buzz(12);
+      });
+    });
+    root.querySelectorAll('[data-em]').forEach(el => {
+      el.addEventListener('click', () => {
+        emoji = el.dataset.em;
+        root.querySelectorAll('[data-em]').forEach(x => x.classList.toggle('on', x === el));
+        buzz(12);
+      });
+    });
+    root.querySelector('[data-sheet="cancel"]').onclick = closeSheet;
+    root.querySelector('[data-sheet="saveBook"]').onclick = () => {
+      const title = root.querySelector('#btitle').value.trim();
+      if (!title) { toast('要给书起个名字呀 📕'); return; }
+      const data = {
+        title,
+        author: root.querySelector('#bauthor').value.trim(),
+        status,
+        emoji,
+        note: root.querySelector('#bnote').value.trim()
+      };
+      if (isEdit) {
+        const wasRead = b.status === 'read';
+        Object.assign(state.books.find(x => x.id === b.id), data);
+        if (!wasRead && data.status === 'read') {
+          toast(`🎉 读完啦！存钱罐 +¥5`);
+          confetti();
+        }
+      } else {
+        const maxOrder = state.books.reduce((m, x) => Math.max(m, x.order || 0), -1);
+        state.books.push({ id: uid(), order: maxOrder + 1, ...data });
+        toast('放进书架啦 📚');
+      }
+      save(); closeSheet(); render();
+    };
+  });
+}
+
+function delBook(id) {
+  const b = state.books.find(x => x.id === id);
+  if (!b) return;
+  askConfirm(`删掉《${b.title}》？`, '只会从书架里移除，阅读打卡记录不受影响。', () => {
+    state.books = state.books.filter(x => x.id !== id);
+    save(); render(); toast('已移除');
+  });
+}
+
+function cycleStatus(id) {
+  const b = state.books.find(x => x.id === id);
+  if (!b) return;
+  const order = ['want', 'reading', 'read'];
+  const i = order.indexOf(b.status);
+  b.status = order[(i + 1) % order.length];
+  save(); render(); buzz(15);
+  if (b.status === 'read') {
+    toast('🎉 读完啦！存钱罐 +¥5');
+    confetti();
+  } else {
+    toast(`${STATUS[b.status].emoji} 变成了「${STATUS[b.status].label}」`);
+  }
+}
+
+function moveBook(id, dir) {
+  let list = ui.shelfFilter === 'all' ? state.books.slice() : state.books.filter(b => b.status === ui.shelfFilter);
+  list.sort((a, b) => (a.order || 0) - (b.order || 0));
+  const i = list.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const a = state.books.find(x => x.id === list[i].id);
+  const c = state.books.find(x => x.id === list[j].id);
+  const tmp = a.order; a.order = c.order; c.order = tmp;
+  if (a.order === c.order) { a.order = (a.order || 0) + 0.5; }
+  save(); render(); buzz(10);
+}
+
+/* ---------- 导出 / 导入 / 重置 ---------- */
+function doExport() {
+  const data = { app: 'coer-reading-map', v: 2, exportedAt: new Date().toISOString(), ...state };
+  const txt = JSON.stringify(data, null, 2);
+  try {
+    const blob = new Blob([txt], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `媛媛阅读记录_${today()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    toast('备份文件已保存 📤');
+  } catch (e) {
+    openSheet(`<div class="grab"></div><h3>📤 手动复制备份</h3>
+      <p class="sub">长按下方文字全选复制，保存到备忘录里</p>
+      <textarea class="ctextarea" rows="10" readonly>${esc(txt)}</textarea>
+      <button class="btn" data-sheet="cancel" style="margin-top:12px">好了</button>`,
+      root => { root.querySelector('[data-sheet="cancel"]').onclick = closeSheet; });
+  }
+}
+
+function doImport() {
+  openSheet(`<div class="grab"></div>
+    <h3>📥 导入备份</h3>
+    <p class="sub">选择之前导出的 .json 文件，或用文字粘贴</p>
+    <input type="file" id="ifile" accept=".json,application/json" style="display:none">
+    <button class="btn mint" data-sheet="pickfile" style="margin-bottom:12px">📁 选择备份文件</button>
+    <label class="lb">或者把备份内容粘贴到这里</label>
+    <textarea class="ctextarea" id="itext" rows="5" placeholder='{"books":[...],"logs":{...}}'></textarea>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn ghost" data-sheet="cancel">取消</button>
+      <button class="btn" data-sheet="doImport">导入</button>
+    </div>
+  `, root => {
+    const file = root.querySelector('#ifile');
+    root.querySelector('[data-sheet="pickfile"]').onclick = () => file.click();
+    file.onchange = () => {
+      const f = file.files[0];
+      if (!f) return;
+      const fr = new FileReader();
+      fr.onload = () => { root.querySelector('#itext').value = fr.result; toast('文件读好啦，点导入确认'); };
+      fr.readAsText(f);
+    };
+    root.querySelector('[data-sheet="cancel"]').onclick = closeSheet;
+    root.querySelector('[data-sheet="doImport"]').onclick = () => {
+      const txt = root.querySelector('#itext').value.trim();
+      if (!txt) { toast('先选文件或粘贴内容哦'); return; }
+      let d;
+      try { d = JSON.parse(txt); } catch (e) { toast('内容看不懂，不是有效的备份 😢'); return; }
+      if (!d || (!Array.isArray(d.books) && !d.logs)) { toast('这不是媛媛的阅读备份文件'); return; }
+      askConfirm('导入备份？', '会替换掉现在手机里的全部数据，想保留的话先导出吧。', () => {
+        state = migrate({
+          goal: d.goal,
+          books: Array.isArray(d.books) ? d.books : [],
+          logs: (d.logs && typeof d.logs === 'object') ? d.logs : {}
+        });
+        save(); closeSheet(); render(); toast('导入成功 🎉');
+      });
+    };
+  });
+}
+
+function doReset() {
+  askConfirm('清空全部数据？', '书架和所有打卡记录都会消失，而且没法恢复。建议先导出备份！', () => {
+    state = { goal: 20, books: [], logs: {} };
+    save(); render(); toast('已清空');
+  });
+}
+
+/* =========================================================
+   弹窗 / 反馈
+   ========================================================= */
+function openSheet(html, after) {
+  const mask = document.getElementById('mask');
+  const sheet = document.getElementById('sheet');
+  sheet.innerHTML = html;
+  mask.classList.add('on');
+  if (after) after(sheet);
+}
+function closeSheet() {
+  document.getElementById('mask').classList.remove('on');
+}
+document.getElementById('mask').addEventListener('click', e => {
+  if (e.target.id === 'mask') closeSheet();
+});
+
+function askConfirm(title, desc, onOk) {
+  openSheet(`<div class="grab"></div>
+    <h3>${title}</h3>
+    <p class="sub">${desc}</p>
+    <div class="row2" style="margin-top:8px">
+      <button class="btn ghost" data-c="no">再想想</button>
+      <button class="btn" data-c="yes" style="background:linear-gradient(100deg,#FF9E9E,#FF7B7B);box-shadow:0 8px 20px rgba(255,123,123,.35)">确定</button>
+    </div>`, root => {
+    root.querySelector('[data-c="no"]').onclick = closeSheet;
+    root.querySelector('[data-c="yes"]').onclick = () => { closeSheet(); setTimeout(onOk, 180); };
+  });
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('on'), 1900);
+}
+
+function buzz(ms) {
+  if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+}
+
+function reward(minutes, st, before, goalHit) {
+  const box = document.getElementById('rewardBox');
+  const rw = document.getElementById('reward');
+  const emojis = ['🎉', '🌟', '🏆', '🍭', '🌈', '🎈', '🦄', '🧁'];
+  const e = emojis[Math.floor(Math.random() * emojis.length)];
+
+  let title = `打卡成功！阅读 ${minutes} 分钟`;
+  let sub = goalHit ? '今日目标达成 🎯 ' : '';
+  let icon = e;
+
+  if (st > before && st > 0 && st % 7 === 0) {
+    icon = '🏆';
+    title = `连续 ${st} 天！太厉害了`;
+    sub += '整整一整周，媛媛真棒 👏';
+  } else if (st === 1) {
+    icon = '🌱';
+    title = `打卡成功！阅读 ${minutes} 分钟`;
+    sub += '新的小火苗点亮啦，明天再来～';
+  } else if (st >= 30) {
+    icon = '🧙';
+    title = `连续 ${st} 天，阅读魔法师！`;
+    sub += '这个坚持真的很了不起 ✨';
+  } else {
+    sub += `连续第 ${st} 天啦`;
+  }
+
+  box.innerHTML = `<div class="e">${icon}</div><div class="t">${title}</div><div class="s">${sub}</div>`;
+  rw.classList.add('on');
+  confetti();
+  setTimeout(() => rw.classList.remove('on'), 2000);
+}
+
+function confetti() {
+  const wrap = document.getElementById('confetti');
+  const colors = ['#FF8A5C', '#FFC94D', '#6FD3B6', '#8EC5FF', '#B79CF2', '#FF8FB1'];
+  for (let i = 0; i < 34; i++) {
+    const d = document.createElement('div');
+    d.className = 'cf';
+    d.style.left = Math.random() * 100 + '%';
+    d.style.background = colors[Math.floor(Math.random() * colors.length)];
+    d.style.animationDuration = (1.5 + Math.random() * 1.3) + 's';
+    d.style.animationDelay = (Math.random() * 0.45) + 's';
+    d.style.width = (6 + Math.random() * 6) + 'px';
+    d.style.height = (9 + Math.random() * 9) + 'px';
+    wrap.appendChild(d);
+    setTimeout(() => d.remove(), 3200);
+  }
+}
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* ---------- 交互绑定 ---------- */
+function bindMain() {
+  const app = document.getElementById('app');
+
+  const note = document.getElementById('note');
+  const cnt = document.getElementById('cnt');
+  if (note && cnt) {
+    note.addEventListener('input', () => {
+      cnt.textContent = note.value.length + '/60';
+      cnt.style.color = note.value.length >= 55 ? '#F4693C' : '';
+    });
+  }
+
+  app.querySelectorAll('[data-dur]').forEach(el => {
+    el.addEventListener('click', () => {
+      ui.dur = +el.dataset.dur;
+      app.querySelectorAll('[data-dur]').forEach(x => x.classList.toggle('on', x === el));
+      buzz(12);
+    });
+  });
+
+  app.querySelectorAll('[data-feel]').forEach(el => {
+    el.addEventListener('click', () => {
+      ui.feeling = el.dataset.feel;
+      app.querySelectorAll('[data-feel]').forEach(x => x.classList.toggle('on', x === el));
+      buzz(12);
+    });
+  });
+
+  app.querySelectorAll('[data-filter]').forEach(el => {
+    el.addEventListener('click', () => { ui.shelfFilter = el.dataset.filter; render(); buzz(10); });
+  });
+
+  app.querySelectorAll('[data-act]').forEach(el => {
+    el.addEventListener('click', () => {
+      const act = el.dataset.act;
+      const id = el.dataset.id;
+      buzz(12);
+      switch (act) {
+        case 'checkin':     doCheckin(); break;
+        case 'recheck':     doRecheck(); break;
+        case 'quickdone':   openQuickSheet(); break;
+        case 'gostart':     ui.tab = 'checkin'; render(); window.scrollTo({ top: 0 }); break;
+        case 'gomap':       ui.tab = 'map'; render(); window.scrollTo({ top: 0 }); break;
+        case 'editgoal':    openGoalSheet(); break;
+        case 'piggydetail': openPiggySheet(); break;
+        case 'readtoday':   ui.tab = 'report'; render(); break;
+        case 'addbook':     openBookSheet(); break;
+        case 'editbook':    openBookSheet(state.books.find(b => b.id === id)); break;
+        case 'delbook':     delBook(id); break;
+        case 'cycle':       cycleStatus(id); break;
+        case 'moveup':      moveBook(id, -1); break;
+        case 'movedown':    moveBook(id, 1); break;
+        case 'togglesort':  ui.sortMode = ui.sortMode === 'manual' ? 'time' : 'manual'; render(); toast(ui.sortMode === 'manual' ? '按你排的顺序显示' : '按最近添加排序'); break;
+        case 'export':      doExport(); break;
+        case 'import':      doImport(); break;
+        case 'reset':       doReset(); break;
+      }
+    });
+  });
+}
+
+/* ---------- 底部导航 ---------- */
+document.getElementById('tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab');
+  if (!b) return;
+  ui.tab = b.dataset.tab;
+  buzz(10);
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+/* ---------- 启动 ---------- */
+render();
+</script>
+</body>
+</html>
