@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>职称讲课答辩抽签系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "PingFang SC", "Heiti SC", sans-serif;
+        }
+        body {
+            min-height: 100vh;
+            padding: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(99,102,241,0.18) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(16,185,129,0.15) 0%, transparent 40%),
+                linear-gradient(135deg, #eef2ff 0%, #f5f7fa 50%, #ecfdf5 100%);
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            padding: 2.2rem 1.8rem 2rem;
+            border-radius: 28px;
+            box-shadow:
+                0 20px 60px rgba(30,58,138,0.18),
+                0 4px 12px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+        }
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899, #f59e0b);
+        }
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            margin-bottom: 1.6rem;
+            font-size: 1.65rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            position: relative;
+            padding-bottom: 0.8rem;
+        }
+        h1::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        }
+
+        /* 学段选择卡片 */
+        .stage-mode {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 20px;
+            padding: 1.4rem 1.2rem;
+            margin-bottom: 1.4rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+        .stage-title {
+            font-size: 1.05rem;
+            color: #334155;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        .stage-title::before,
+        .stage-title::after {
+            content: "";
+            width: 24px;
+            height: 1px;
+            background: #cbd5e1;
+        }
+
+        /* 选项为卡片式 */
+        .stage-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.7rem;
+        }
+        .stage-option {
+            position: relative;
+        }
+        .stage-option input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .stage-option label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+            padding: 0.9rem 0.5rem;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #475569;
+            font-weight: 500;
+            transition: all 0.25s ease;
+            user-select: none;
+        }
+        .stage-option label .icon {
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+        .stage-option label:hover {
+            border-color: #a5b4fc;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99,102,241,0.12);
+        }
+        .stage-option input:checked + label {
+            border-color: #6366f1;
+            background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%);
+            color: #4338ca;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(99,102,241,0.25);
+        }
+
+        /* 小学循环段 */
+        .primary-cycle {
+            display: none;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed #cbd5e1;
+        }
+        .cycle-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+        }
+        .cycle-option {
+            position: relative;
+        }
+        .cycle-option input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .cycle-option label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.2rem;
+            padding: 0.8rem 0.4rem;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 0.92rem;
+            color: #475569;
+            font-weight: 500;
+            transition: all 0.25s ease;
+            user-select: none;
+            text-align: center;
+            line-height: 1.25;
+        }
+        .cycle-option label .grade {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #7c3aed;
+        }
+        .cycle-option label:hover {
+            border-color: #c4b5fd;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(124,58,237,0.12);
+        }
+        .cycle-option input:checked + label {
+            border-color: #8b5cf6;
+            background: linear-gradient(180deg, #f5f3ff 0%, #ede9fe 100%);
+            color: #5b21b6;
+            font-weight: 600;
+            box-shadow: 0 4px 14px rgba(139,92,246,0.25);
+        }
+        .cycle-option input:checked + label .grade {
+            color: #6d28d9;
+        }
+
+        /* 按钮 */
+        .btn {
+            width: 100%;
+            padding: 1.15rem;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+            color: white;
+            display: none;
+        }
+        .btn:active {
+            transform: translateY(2px);
+        }
+        #drawBookBtn {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            box-shadow: 0 8px 22px rgba(99,102,241,0.35);
+        }
+        #drawBookBtn:hover {
+            box-shadow: 0 10px 26px rgba(99,102,241,0.45);
+            transform: translateY(-2px);
+        }
+        #drawBookBtn:active {
+            box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+        }
+        #pageBtn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 8px 22px rgba(16,185,129,0.3);
+        }
+        #pageBtn:hover {
+            box-shadow: 0 10px 26px rgba(16,185,129,0.4);
+            transform: translateY(-2px);
+        }
+        #resetBtn {
+            background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+            box-shadow: 0 8px 22px rgba(244,63,94,0.3);
+            display: block;
+        }
+        #resetBtn:hover {
+            box-shadow: 0 10px 26px rgba(244,63,94,0.4);
+            transform: translateY(-2px);
+        }
+
+        /* 结果展示 */
+        .result {
+            text-align: center;
+            padding: 1.6rem 1rem;
+            border-radius: 18px;
+            margin-bottom: 1.2rem;
+            font-size: 1.35rem;
+            color: #1e293b;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e2e8f0;
+            word-break: break-all;
+            font-weight: 500;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.25s ease;
+            line-height: 1.4;
+        }
+        #bookResult {
+            background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
+            border-color: #f5d0fe;
+            color: #6b21a8;
+        }
+        #pageResult {
+            display: none;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-color: #a7f3d0;
+            color: #065f46;
+        }
+        .result.final {
+            font-weight: 700;
+            font-size: 1.5rem;
+            border-width: 2px;
+            box-shadow: 0 0 0 4px rgba(99,102,241,0.12), 0 8px 24px rgba(0,0,0,0.08);
+        }
+        #bookResult.final {
+            color: #7c3aed !important;
+            border-color: #a78bfa;
+        }
+        #pageResult.final {
+            color: #059669 !important;
+            border-color: #34d399;
+        }
+
+        /* 页码输入 */
+        .page-inputs {
+            display: none;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 1.2rem;
+        }
+        .page-inputs input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 1.2rem;
+            text-align: center;
+            transition: all 0.25s;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .page-inputs input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 4px rgba(139,92,246,0.15);
+            background-color: white;
+        }
+        .page-inputs input::placeholder {
+            color: #94a3b8;
+            font-size: 1.05rem;
+        }
+
+        /* 操作说明 */
+        .instructions {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 14px;
+            padding: 1rem 1.2rem;
+            margin-top: 1.2rem;
+            border-left: 4px solid #6366f1;
+        }
+        .instructions h3 {
+            color: #0f172a;
+            font-size: 1rem;
+            margin-bottom: 0.6rem;
+            font-weight: 600;
+        }
+        .instructions p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.65;
+            margin-bottom: 0.3rem;
+        }
+        .instructions p:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 375px) {
+            .container { padding: 1.6rem 1.1rem; }
+            h1 { font-size: 1.4rem; }
+            .btn { padding: 1rem; font-size: 1.1rem; }
+            .result { font-size: 1.2rem; padding: 1.3rem 0.8rem; }
+            .result.final { font-size: 1.3rem; }
+            .stage-option label, .cycle-option label { font-size: 0.85rem; padding: 0.7rem 0.3rem; }
+            .cycle-option label .grade { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>职称讲课答辩抽签系统</h1>
+
+        <!-- 学段选择 -->
+        <div class="stage-mode">
+            <div class="stage-title">选择教学学段</div>
+            <div class="stage-options">
+                <div class="stage-option">
+                    <input type="radio" name="stage" id="highSchool" value="high">
+                    <label for="highSchool"><span class="icon">🏫</span>高中</label>
+                </div>
+                <div class="stage-option">
+                    <input type="radio" name="stage" id="middleSchool" value="middle">
+                    <label for="middleSchool"><span class="icon">📚</span>初中</label>
+                </div>
+                <div class="stage-option">
+                    <input type="radio" name="stage" id="primarySchool" value="primary">
+                    <label for="primarySchool"><span class="icon">🎒</span>小学</label>
+                </div>
+            </div>
+
+            <!-- 小学循环段 -->
+            <div class="primary-cycle" id="primaryCycleArea">
+                <div class="stage-title">选择小学循环段</div>
+                <div class="cycle-options">
+                    <div class="cycle-option">
+                        <input type="radio" name="cycle" id="cycle1-2" value="1-2">
+                        <label for="cycle1-2"><span class="grade">1-2年级</span>低段循环</label>
+                    </div>
+                    <div class="cycle-option">
+                        <input type="radio" name="cycle" id="cycle3-4" value="3-4">
+                        <label for="cycle3-4"><span class="grade">3-4年级</span>中段循环</label>
+                    </div>
+                    <div class="cycle-option">
+                        <input type="radio" name="cycle" id="cycle5-6" value="5-6">
+                        <label for="cycle5-6"><span class="grade">5-6年级</span>高段循环</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" id="drawBookBtn">🎯 抽取教材册数</button>
+        <div class="result" id="bookResult">请先选择教学学段</div>
+
+        <div class="page-inputs" id="pageInputArea">
+            <input type="number" id="minPage" placeholder="起始页码（如 1）" min="1">
+            <input type="number" id="maxPage" placeholder="结束页码（如 50）" min="1">
+        </div>
+        <button class="btn" id="pageBtn">🎲 抽具体页码</button>
+        <div class="result" id="pageResult">输入页码范围后点击抽签</div>
+
+        <button class="btn" id="resetBtn">🔄 重新开始抽签</button>
+
+        <div class="instructions">
+            <h3>📋 操作说明</h3>
+            <p>1. 选择教学学段：高中 / 初中 / 小学；</p>
+            <p>2. 小学学段需额外选择循环段（1-2年级 / 3-4年级 / 5-6年级）；</p>
+            <p>3. 点击「抽取教材册数」，系统随机抽取对应学段的教材册数；</p>
+            <p>4. 输入页码范围（起始 ≤ 结束），点击「抽具体页码」完成抽签；</p>
+            <p>5. 点击「重新开始抽签」可重置所有选择和结果。</p>
+        </div>
+    </div>
+
+    <audio id="successSound" src="https://freesound.org/data/previews/509/509791_10226570-lq.mp3" preload="auto"></audio>
+    <audio id="errorSound" src="https://freesound.org/data/previews/434/434210_8235070-lq.mp3" preload="auto"></audio>
+    <audio id="resetSound" src="https://freesound.org/data/previews/342/342746_6103108-lq.mp3" preload="auto"></audio>
+
+    <script>
+        const stageRadios = document.querySelectorAll('input[name="stage"]');
+        const primaryCycleArea = document.getElementById('primaryCycleArea');
+        const cycleRadios = document.querySelectorAll('input[name="cycle"]');
+        const drawBookBtn = document.getElementById('drawBookBtn');
+        const bookResult = document.getElementById('bookResult');
+        const pageInputArea = document.getElementById('pageInputArea');
+        const minPageInput = document.getElementById('minPage');
+        const maxPageInput = document.getElementById('maxPage');
+        const pageBtn = document.getElementById('pageBtn');
+        const pageResult = document.getElementById('pageResult');
+        const resetBtn = document.getElementById('resetBtn');
+
+        const successSound = document.getElementById('successSound');
+        const errorSound = document.getElementById('errorSound');
+        const resetSound = document.getElementById('resetSound');
+
+        // 各学段教材数据（小学三段循环）
+        const bookData = {
+            high: [
+                '高一上册', '高一下册',
+                '高二上册', '高二下册',
+                '高三上册', '高三下册'
+            ],
+            middle: [
+                '七年级上册', '七年级下册',
+                '八年级上册', '八年级下册',
+                '九年级上册', '九年级下册'
+            ],
+            // 1-2年级低段
+            'primary-1-2': [
+                '一年级上册', '一年级下册',
+                '二年级上册', '二年级下册'
+            ],
+            // 3-4年级中段
+            'primary-3-4': [
+                '三年级上册', '三年级下册',
+                '四年级上册', '四年级下册'
+            ],
+            // 5-6年级高段
+            'primary-5-6': [
+                '五年级上册', '五年级下册',
+                '六年级上册', '六年级下册'
+            ]
+        };
+
+        // 滚动动画
+        function rollAnimation(element, dataList, duration = 1800) {
+            element.classList.remove('final');
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                const rollInterval = 40;
+                let rollTimer;
+                let speedStep = 0;
+
+                rollTimer = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = elapsed / duration;
+
+                    if (progress > 0.7) {
+                        speedStep += 1;
+                        if (speedStep % 3 !== 0) return;
+                    }
+
+                    const randomIndex = Math.floor(Math.random() * dataList.length);
+                    element.textContent = `抽取中：${dataList[randomIndex]}`;
+                    element.style.color = '#64748b';
+
+                    if (elapsed >= duration) {
+                        clearInterval(rollTimer);
+                        const finalIndex = Math.floor(Math.random() * dataList.length);
+                        const finalValue = dataList[finalIndex];
+                        element.textContent = `抽取结果：${finalValue}`;
+                        element.classList.add('final');
+                        successSound.currentTime = 0;
+                        successSound.play().catch(err => console.log('音效播放失败：', err));
+                        resolve(finalValue);
+                    }
+                }, rollInterval);
+            });
+        }
+
+        // 学段切换
+        stageRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                bookResult.classList.remove('final');
+                bookResult.textContent = '点击「抽取教材册数」开始抽签';
+                bookResult.style.color = '';
+                pageInputArea.style.display = 'none';
+                pageBtn.style.display = 'none';
+                pageResult.style.display = 'none';
+                pageResult.classList.remove('final');
+
+                const selectedStage = this.value;
+                if (selectedStage === 'primary') {
+                    primaryCycleArea.style.display = 'flex';
+                    drawBookBtn.style.display = 'none';
+                    bookResult.textContent = '请先选择小学循环段';
+                } else {
+                    primaryCycleArea.style.display = 'none';
+                    drawBookBtn.style.display = 'block';
+                }
+            });
+        });
+
+        // 小学循环选择
+        cycleRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                bookResult.classList.remove('final');
+                drawBookBtn.style.display = 'block';
+                bookResult.textContent = '点击「抽取教材册数」开始抽签';
+                bookResult.style.color = '';
+            });
+        });
+
+        // 抽取教材册数
+        drawBookBtn.onclick = async function() {
+            let selectedStage = '';
+            stageRadios.forEach(radio => { if (radio.checked) selectedStage = radio.value; });
+
+            if (!selectedStage) {
+                bookResult.textContent = '请先选择教学学段！';
+                bookResult.style.color = '#dc2626';
+                errorSound.currentTime = 0;
+                errorSound.play().catch(err => console.log('音效播放失败：', err));
+                return;
+            }
+
+            let bookList = [];
+            if (selectedStage === 'primary') {
+                let selectedCycle = '';
+                cycleRadios.forEach(radio => { if (radio.checked) selectedCycle = radio.value; });
+                if (!selectedCycle) {
+                    bookResult.textContent = '请先选择小学循环段！';
+                    bookResult.style.color = '#dc2626';
+                    errorSound.currentTime = 0;
+                    errorSound.play().catch(err => console.log('音效播放失败：', err));
+                    return;
+                }
+                bookList = bookData[`primary-${selectedCycle}`];
+            } else {
+                bookList = bookData[selectedStage];
+            }
+
+            drawBookBtn.disabled = true;
+            drawBookBtn.style.opacity = '0.7';
+
+            await rollAnimation(bookResult, bookList, 2000);
+
+            pageInputArea.style.display = 'flex';
+            pageBtn.style.display = 'block';
+            pageResult.style.display = 'flex';
+
+            drawBookBtn.disabled = false;
+            drawBookBtn.style.opacity = '1';
+        };
+
+        // 抽页码
+        pageBtn.onclick = async function() {
+            const min = Number(minPageInput.value);
+            const max = Number(maxPageInput.value);
+
+            if (isNaN(min) || isNaN(max) || min < 1 || max < min) {
+                pageResult.textContent = '输入错误！请填写有效页码范围';
+                pageResult.style.color = '#dc2626';
+                errorSound.currentTime = 0;
+                errorSound.play().catch(err => console.log('音效播放失败：', err));
+                return;
+            }
+
+            const pageList = [];
+            for (let i = min; i <= max; i++) {
+                pageList.push(`${i}页`);
+            }
+
+            pageBtn.disabled = true;
+            pageBtn.style.opacity = '0.7';
+
+            pageResult.textContent = '抽签中...';
+            pageResult.style.color = '#475569';
+            pageResult.classList.remove('final');
+            await rollAnimation(pageResult, pageList, 1800);
+            pageResult.style.color = '';
+            pageResult.classList.add('final');
+
+            pageBtn.disabled = false;
+            pageBtn.style.opacity = '1';
+        };
+
+        // 重新开始
+        resetBtn.onclick = function() {
+            stageRadios.forEach(radio => radio.checked = false);
+            cycleRadios.forEach(radio => radio.checked = false);
+
+            primaryCycleArea.style.display = 'none';
+            drawBookBtn.style.display = 'none';
+            pageInputArea.style.display = 'none';
+            pageBtn.style.display = 'none';
+            pageResult.style.display = 'none';
+
+            bookResult.classList.remove('final');
+            bookResult.textContent = '请先选择教学学段';
+            bookResult.style.color = '';
+            pageResult.classList.remove('final');
+            pageResult.textContent = '输入页码范围后点击抽签';
+            pageResult.style.color = '';
+
+            minPageInput.value = '';
+            maxPageInput.value = '';
+
+            resetSound.currentTime = 0;
+            resetSound.play().catch(err => console.log('音效播放失败：', err));
+        };
+    </script>
+</body>
+</html>
